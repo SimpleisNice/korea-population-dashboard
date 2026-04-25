@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Korean Population Change Insight Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Space+Grotesk:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed": "#320047",
+                      "on-primary": "#00363a",
+                      "primary": "#dbfcff",
+                      "tertiary-fixed": "#52ffac",
+                      "surface-dim": "#111318",
+                      "outline-variant": "#3b494b",
+                      "on-secondary-fixed-variant": "#74009f",
+                      "surface": "#111318",
+                      "surface-tint": "#00dbe9",
+                      "primary-fixed": "#7df4ff",
+                      "primary-container": "#00f0ff",
+                      "on-tertiary": "#003920",
+                      "tertiary-container": "#00f89e",
+                      "inverse-on-surface": "#2f3035",
+                      "on-error": "#690005",
+                      "inverse-surface": "#e2e2e8",
+                      "on-background": "#e2e2e8",
+                      "inverse-primary": "#006970",
+                      "on-surface-variant": "#b9cacb",
+                      "primary-fixed-dim": "#00dbe9",
+                      "on-secondary-container": "#480063",
+                      "on-primary-fixed-variant": "#004f54",
+                      "surface-bright": "#37393e",
+                      "secondary-container": "#cf5cff",
+                      "surface-container-low": "#1a1c20",
+                      "tertiary-fixed-dim": "#00e290",
+                      "on-tertiary-fixed-variant": "#005231",
+                      "on-surface": "#e2e2e8",
+                      "background": "#111318",
+                      "on-secondary": "#520071",
+                      "secondary-fixed-dim": "#ecb2ff",
+                      "error": "#ffb4ab",
+                      "on-primary-container": "#006970",
+                      "surface-container": "#1e2024",
+                      "surface-container-lowest": "#0c0e12",
+                      "tertiary": "#daffe4",
+                      "error-container": "#93000a",
+                      "on-error-container": "#ffdad6",
+                      "surface-variant": "#333539",
+                      "on-tertiary-container": "#006d43",
+                      "secondary-fixed": "#f8d8ff",
+                      "secondary": "#ecb2ff",
+                      "surface-container-high": "#282a2e",
+                      "outline": "#849495",
+                      "surface-container-highest": "#333539",
+                      "on-primary-fixed": "#002022",
+                      "on-tertiary-fixed": "#002111"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "8px",
+                      "lg": "40px",
+                      "xs": "4px",
+                      "md": "24px",
+                      "sm": "12px",
+                      "xl": "64px",
+                      "gutter": "24px",
+                      "margin": "32px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "Space Grotesk"
+                      ],
+                      "body-base": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-base": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+      </script>
+<style>
+        .glass-panel {
+            background-color: rgba(17, 19, 24, 0.6); /* surface with opacity */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.12);
+        }
+        .glow-bg {
+            background: radial-gradient(circle at top right, rgba(0, 240, 255, 0.1), transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(207, 92, 255, 0.1), transparent 40%);
+        }
+      </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-base text-body-base glow-bg flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-[280px] z-50 bg-slate-950/40 backdrop-blur-[20px] border-r-[0.5px] border-white/10 flex flex-col py-8 px-6 gap-6">
+<!-- Header -->
+<div class="flex flex-col gap-xs mb-md">
+<h1 class="text-lg font-bold text-white tracking-tighter">Population Insight</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Republic of Korea</p>
+</div>
+<!-- Navigation Links -->
+<div class="flex flex-col gap-xs flex-grow">
+<!-- Active: Dashboard -->
+<a class="flex items-center gap-3 text-cyan-400 bg-cyan-400/10 rounded-lg px-4 py-3 border-l-4 border-cyan-400 hover:text-white transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<!-- Inactive Links -->
+<a class="flex items-center gap-3 text-white/50 px-4 py-3 hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg border-l-4 border-transparent hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-sm text-label-sm">Demographics</span>
+</a>
+<a class="flex items-center gap-3 text-white/50 px-4 py-3 hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg border-l-4 border-transparent hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">sync_alt</span>
+<span class="font-label-sm text-label-sm">Migration</span>
+</a>
+<a class="flex items-center gap-3 text-white/50 px-4 py-3 hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg border-l-4 border-transparent hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-sm text-label-sm">Regional</span>
+</a>
+<a class="flex items-center gap-3 text-white/50 px-4 py-3 hover:bg-white/10 hover:text-white transition-all duration-200 rounded-lg border-l-4 border-transparent hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-label-sm text-label-sm">Reports</span>
+</a>
+</div>
+<!-- Filters Section -->
+<div class="flex flex-col gap-sm mt-auto mb-md">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-xs">Filters</h3>
+<!-- Year Filter -->
+<div class="relative">
+<select class="w-full bg-surface-container/50 border-[0.5px] border-outline-variant rounded-md px-3 py-2 text-on-surface font-body-base text-sm focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container appearance-none transition-colors">
+<option>2024</option>
+<option>2023</option>
+<option>2022</option>
+<option>2021</option>
+<option>2020</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+<!-- Region Filter -->
+<div class="relative">
+<select class="w-full bg-surface-container/50 border-[0.5px] border-outline-variant rounded-md px-3 py-2 text-on-surface font-body-base text-sm focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container appearance-none transition-colors">
+<option>All Regions</option>
+<option>Seoul Capital Area</option>
+<option>Gyeonggi-do</option>
+<option>Busan</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+<!-- CTA -->
+<button class="w-full bg-primary-container text-on-primary-container font-label-sm text-label-sm py-3 rounded-md hover:bg-primary-fixed-dim transition-colors mt-xs flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">filter_list</span> Apply Filters
+            </button>
+</div>
+<!-- Footer / Ad Space -->
+<div class="flex flex-col gap-sm border-t-[0.5px] border-white/10 pt-md">
+<div class="glass-panel rounded-lg p-4 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 transition-opacity h-[100px]">
+<span class="material-symbols-outlined text-outline mb-1 text-2xl">ads_click</span>
+<span class="font-label-sm text-[10px] text-outline uppercase tracking-widest">Ad Space</span>
+</div>
+<div class="flex justify-between mt-sm">
+<a class="flex items-center gap-2 text-white/50 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+<span class="font-label-sm text-label-sm">Support</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-[280px] flex-grow p-gutter overflow-y-auto h-screen w-full custom-scrollbar">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-gutter">
+<!-- Top Bar / Header context (optional for dashboard canvas, but good for title) -->
+<header class="flex justify-between items-center mb-sm">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Overview</h2>
+<p class="font-body-base text-body-base text-on-surface-variant">Key population metrics for 2024</p>
+</div>
+<div class="flex gap-4">
+<button class="glass-panel p-2 rounded-full text-on-surface-variant hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="glass-panel p-2 rounded-full text-on-surface-variant hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Summary Cards Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Card 1: Total Population -->
+<div class="glass-panel rounded-xl p-md flex flex-col relative overflow-hidden group">
+<!-- Subtle background glow on hover -->
+<div class="absolute inset-0 bg-primary-container/0 group-hover:bg-primary-container/5 transition-colors duration-500 rounded-xl"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Total Population</h3>
+<span class="material-symbols-outlined text-primary-container">group</span>
+</div>
+<div class="flex-grow flex flex-col justify-end relative z-10">
+<div class="font-display-lg text-display-lg text-on-surface mb-1">51.6M</div>
+<div class="flex items-center gap-2 text-error">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">trending_down</span>
+<span class="font-data-mono text-data-mono">-0.2% YoY</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Monthly Change -->
+<div class="glass-panel rounded-xl p-md flex flex-col relative overflow-hidden group">
+<div class="absolute inset-0 bg-secondary-container/0 group-hover:bg-secondary-container/5 transition-colors duration-500 rounded-xl"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Monthly Change %</h3>
+<span class="material-symbols-outlined text-secondary-container">show_chart</span>
+</div>
+<div class="flex-grow flex flex-col justify-end relative z-10">
+<div class="font-display-lg text-display-lg text-on-surface mb-1">-0.05%</div>
+<div class="flex items-center gap-2 text-error">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">arrow_drop_down</span>
+<span class="font-data-mono text-data-mono">From previous month</span>
+</div>
+</div>
+<!-- Decorative Sparkline Suggestion -->
+<div class="absolute bottom-0 left-0 right-0 h-[40px] bg-gradient-to-t from-secondary-container/10 to-transparent pointer-events-none"></div>
+</div>
+<!-- Card 3: Regional Peak -->
+<div class="glass-panel rounded-xl p-md flex flex-col relative overflow-hidden group">
+<div class="absolute inset-0 bg-tertiary-container/0 group-hover:bg-tertiary-container/5 transition-colors duration-500 rounded-xl"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Growth Peak (Region)</h3>
+<span class="material-symbols-outlined text-tertiary-container">location_on</span>
+</div>
+<div class="flex-grow flex flex-col justify-end relative z-10">
+<div class="font-headline-md text-headline-md text-on-surface mb-1">Gyeonggi-do</div>
+<div class="flex items-center gap-2 text-tertiary-container">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+<span class="font-data-mono text-data-mono">+1.2% Growth</span>
+</div>
+</div>
+</div>
+</div> <!-- End Summary Cards -->
+<!-- Main Charts Area -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Main Line Chart Container -->
+<div class="glass-panel rounded-xl p-md lg:col-span-2 flex flex-col min-h-[400px]">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">Population Trend (2020-2024)</h3>
+<button class="text-on-surface-variant hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<!-- Faux Chart Area -->
+<div class="flex-grow relative w-full border-b-[0.5px] border-l-[0.5px] border-white/5 flex items-end">
+<!-- Y-Axis Labels (Faux) -->
+<div class="absolute left-[-40px] top-0 bottom-0 flex flex-col justify-between font-data-mono text-xs text-on-surface-variant">
+<span>52.0M</span>
+<span>51.8M</span>
+<span>51.6M</span>
+<span>51.4M</span>
+</div>
+<!-- Grid Lines (Faux) -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="w-full border-t-[0.5px] border-white/5"></div>
+<div class="w-full border-t-[0.5px] border-white/5"></div>
+<div class="w-full border-t-[0.5px] border-white/5"></div>
+<div class="w-full border-t-[0.5px] border-white/5"></div>
+</div>
+<!-- Area Fill Representation -->
+<div class="absolute bottom-0 left-0 right-0 h-full w-full overflow-hidden flex items-end">
+<svg class="w-full h-[70%]" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,50 C20,40 40,60 60,30 C80,10 100,20 100,20 L100,100 L0,100 Z" fill="url(#grad1)" opacity="0.3"></path>
+<path d="M0,50 C20,40 40,60 60,30 C80,10 100,20 100,20" fill="none" stroke="#00f0ff" stroke-width="0.5"></path>
+<defs>
+<lineargradient id="grad1" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#00f0ff;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#00f0ff;stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+</div>
+<!-- X-Axis Labels (Faux) -->
+<div class="flex justify-between font-data-mono text-xs text-on-surface-variant mt-2 pl-2">
+<span>2020</span>
+<span>2021</span>
+<span>2022</span>
+<span>2023</span>
+<span>2024</span>
+</div>
+</div>
+<!-- Secondary Bar Chart Container -->
+<div class="glass-panel rounded-xl p-md lg:col-span-1 flex flex-col min-h-[400px]">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-label-sm text-label-sm text-on-surface uppercase tracking-widest">Regional Shift</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">info</span>
+</div>
+<!-- Faux Horizontal Bar Chart -->
+<div class="flex-grow flex flex-col justify-around gap-4 mt-2">
+<!-- Bar 1 -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-data-mono text-[11px] text-on-surface">
+<span>Seoul</span>
+<span class="text-error">-1.5%</span>
+</div>
+<div class="w-full bg-surface-container-high h-[6px] rounded-full overflow-hidden">
+<div class="bg-error w-[60%] h-full rounded-full"></div>
+</div>
+</div>
+<!-- Bar 2 -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-data-mono text-[11px] text-on-surface">
+<span>Gyeonggi</span>
+<span class="text-tertiary-container">+2.1%</span>
+</div>
+<div class="w-full bg-surface-container-high h-[6px] rounded-full overflow-hidden">
+<div class="bg-tertiary-container w-[80%] h-full rounded-full"></div>
+</div>
+</div>
+<!-- Bar 3 -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-data-mono text-[11px] text-on-surface">
+<span>Busan</span>
+<span class="text-error">-0.8%</span>
+</div>
+<div class="w-full bg-surface-container-high h-[6px] rounded-full overflow-hidden">
+<div class="bg-error w-[40%] h-full rounded-full"></div>
+</div>
+</div>
+<!-- Bar 4 -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-data-mono text-[11px] text-on-surface">
+<span>Sejong</span>
+<span class="text-tertiary-container">+3.5%</span>
+</div>
+<div class="w-full bg-surface-container-high h-[6px] rounded-full overflow-hidden">
+<div class="bg-tertiary-container w-[95%] h-full rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

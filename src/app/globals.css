@@ -46,6 +46,33 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Stitch Custom Colors */
+  --color-surface-container: #1e2024;
+  --color-surface-container-low: #1a1c20;
+  --color-surface-container-high: #282a2e;
+  --color-surface-container-highest: #333539;
+  --color-surface-container-lowest: #0c0e12;
+  --color-primary-container: #00f0ff;
+  --color-on-primary-container: #006970;
+  --color-primary-fixed-dim: #00dbe9;
+  --color-secondary-container: #cf5cff;
+  --color-on-secondary-container: #480063;
+  --color-tertiary-container: #00f89e;
+  --color-outline-variant: #3b494b;
+  --color-outline: #849495;
+  --color-surface-dim: #111318;
+  --color-surface-variant: #333539;
+  --color-on-surface: #e2e2e8;
+  --color-on-surface-variant: #b9cacb;
+  --color-error: #ffb4ab;
+
+  /* Stitch Custom Fonts */
+  --font-headline-md: var(--font-inter);
+  --font-body-base: var(--font-inter);
+  --font-label-sm: var(--font-inter);
+  --font-display-lg: var(--font-inter);
+  --font-data-mono: var(--font-space-grotesk);
 }
 
 :root {
@@ -126,5 +153,18 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background-color: rgba(17, 19, 24, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 0.5px solid rgba(255, 255, 255, 0.12);
+  }
+  .glow-bg {
+    background: radial-gradient(circle at top right, rgba(0, 240, 255, 0.1), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(207, 92, 255, 0.1), transparent 40%);
   }
 }
