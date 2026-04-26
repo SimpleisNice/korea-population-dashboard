@@ -9,10 +9,10 @@ import {
   Map as MapIcon, 
   FileText, 
   ChevronDown, 
-  Filter, 
   HelpCircle 
 } from "lucide-react";
 import { AdSense } from "@/components/AdSense";
+import { ShareButton } from "@/components/ShareButton";
 
 interface SidebarProps {
   regions: string[];
@@ -113,9 +113,10 @@ export function Sidebar({ regions, years, months }: SidebarProps) {
           </div>
         </div>
 
-        <button className="w-full bg-primary-container text-on-primary-container font-label-sm text-[12px] py-3 rounded-md hover:bg-primary-fixed-dim transition-colors mt-1 flex items-center justify-center gap-2">
-          <Filter size={16} /> 필터 적용
-        </button>
+        <ShareButton
+          className="w-full bg-surface-container/60 hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-sm text-[12px] py-3 rounded-md transition-colors mt-1 justify-center border-[0.5px] border-outline-variant"
+          label="현재 필터 링크 복사"
+        />
       </div>
 
       <div className="flex flex-col gap-3 border-t-[0.5px] border-white/10 pt-6">

@@ -26,6 +26,15 @@ export function RegionalShiftChart({ data }: RegionalShiftChartProps) {
         <h3 className="font-label-sm text-[12px] text-on-surface uppercase tracking-widest">
           지역별 인구 변동 (전년 동월 대비 %)
         </h3>
+        {/* 증감 범례 */}
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1 text-[11px] text-on-surface-variant">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#00f89e]"></span>증가
+          </span>
+          <span className="flex items-center gap-1 text-[11px] text-on-surface-variant">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#ffb4ab]"></span>감소
+          </span>
+        </div>
       </div>
       <div className="flex-grow w-full h-full relative" style={{ minHeight: "320px" }}>
         {hasData ? (
@@ -44,6 +53,12 @@ export function RegionalShiftChart({ data }: RegionalShiftChartProps) {
             }}
             borderRadius={3}
             borderColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+            markers={[{
+              axis: "x" as const,
+              value: 0,
+              lineStyle: { stroke: "rgba(255,255,255,0.3)", strokeWidth: 1.5, strokeDasharray: "4 4" },
+              legend: "",
+            }]}
             axisTop={null}
             axisRight={null}
             axisBottom={{

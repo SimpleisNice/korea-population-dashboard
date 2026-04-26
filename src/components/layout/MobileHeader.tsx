@@ -43,7 +43,12 @@ export function MobileHeader({ regions, years, months }: MobileHeaderProps) {
         >
           <Menu size={24} />
         </button>
-        <h1 className="text-cyan-400 font-bold tracking-tighter text-xl">Population KR</h1>
+        <h1 className="text-cyan-400 font-bold tracking-tighter text-xl">
+          인구 인사이트
+          <span className="text-[12px] font-normal text-on-surface-variant ml-2">
+            {year}년 {MONTH_NAMES_KO[parseInt(month)] || `${month}월`}
+          </span>
+        </h1>
         <div className="w-8 h-8 rounded-full bg-surface-container overflow-hidden border border-white/10 flex items-center justify-center">
           <Users size={16} className="text-on-surface-variant" />
         </div>
@@ -91,19 +96,19 @@ export function MobileHeader({ regions, years, months }: MobileHeaderProps) {
             <div className="flex flex-col gap-3 mt-auto">
               <h3 className="font-label-sm text-[12px] text-on-surface-variant uppercase tracking-widest mb-1">필터</h3>
               <div className="relative">
-                <select value={year} onChange={(e) => { setYear(e.target.value); }} className="w-full bg-surface-container/50 border-[0.5px] border-outline-variant rounded-md px-3 py-2 text-on-surface text-sm appearance-none">
+                <select value={year} onChange={(e) => { setYear(e.target.value); setMenuOpen(false); }} className="w-full bg-surface-container/50 border-[0.5px] border-outline-variant rounded-md px-3 py-2 text-on-surface text-sm appearance-none">
                   {years.map(y => <option key={y} value={y.toString()}>{y}년</option>)}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant"><ChevronDown size={16} /></div>
               </div>
               <div className="relative">
-                <select value={month} onChange={(e) => { setMonth(e.target.value); }} className="w-full bg-surface-container/50 border-[0.5px] border-outline-variant rounded-md px-3 py-2 text-on-surface text-sm appearance-none">
+                <select value={month} onChange={(e) => { setMonth(e.target.value); setMenuOpen(false); }} className="w-full bg-surface-container/50 border-[0.5px] border-outline-variant rounded-md px-3 py-2 text-on-surface text-sm appearance-none">
                   {months.map(m => <option key={m} value={m.toString()}>{MONTH_NAMES_KO[m]}</option>)}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-on-surface-variant"><ChevronDown size={16} /></div>
               </div>
               <div className="relative">
-                <select value={region} onChange={(e) => { setRegion(e.target.value); }} className="w-full bg-surface-container/50 border-[0.5px] border-outline-variant rounded-md px-3 py-2 text-on-surface text-sm appearance-none">
+                <select value={region} onChange={(e) => { setRegion(e.target.value); setMenuOpen(false); }} className="w-full bg-surface-container/50 border-[0.5px] border-outline-variant rounded-md px-3 py-2 text-on-surface text-sm appearance-none">
                   <option value="전국">전국</option>
                   {regions.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>

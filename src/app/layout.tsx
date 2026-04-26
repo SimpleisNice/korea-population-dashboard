@@ -15,12 +15,12 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Korean Population Insight Dashboard",
-  description: "A premium dashboard visualizing demographic changes, migration, and regional population shifts in the Republic of Korea.",
-  keywords: ["Korea", "Population", "Demographics", "Dashboard", "Statistics"],
+  title: "대한민국 인구 인사이트 대시보드",
+  description: "행정안전부 주민등록 데이터 기반 대한민국 시도별 인구 변동 시각화 대시보드. 인구 추이, 성별 구성, 지역별 변동률을 한눈에 확인하세요.",
+  keywords: ["대한민국 인구", "주민등록 통계", "인구 대시보드", "시도별 인구", "인구 변화", "Korea Population", "Demographics Dashboard"],
   openGraph: {
-    title: "Korean Population Insight Dashboard",
-    description: "Visualize demographic changes in South Korea with real-time data.",
+    title: "대한민국 인구 인사이트 대시보드",
+    description: "행정안전부 주민등록 데이터로 보는 대한민국 인구 변화",
     type: "website",
     locale: "ko_KR",
   },
@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ko"
       className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased dark`}
     >
       <head>

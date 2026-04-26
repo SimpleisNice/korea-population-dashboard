@@ -1,4 +1,7 @@
+"use client";
+
 import { Users, TrendingDown, TrendingUp, Home, MapPin } from "lucide-react";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 
 interface SummaryCardsProps {
   totalPopulation: number;
@@ -36,14 +39,16 @@ export function SummaryCards({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {/* Card 1: Total Population */}
-      <div className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group">
+      <div className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group animate-fade-in-up animate-stagger-1">
         <div className="absolute inset-0 bg-primary-container/0 group-hover:bg-primary-container/5 transition-colors duration-500 rounded-xl"></div>
         <div className="flex justify-between items-start mb-4 relative z-10">
           <h3 className="font-label-sm text-[12px] text-on-surface-variant uppercase tracking-widest">총 인구</h3>
           <Users className="text-primary-container" size={20} />
         </div>
         <div className="flex-grow flex flex-col justify-end relative z-10">
-          <div className="font-display-lg text-[36px] font-bold text-on-surface mb-1 leading-none">{formatPop(totalPopulation)}</div>
+          <div className="font-display-lg text-[36px] font-bold text-on-surface mb-1 leading-none">
+            <AnimatedNumber value={totalPopulation} formatter={formatPop} />
+          </div>
           <div className={`flex items-center gap-2 mt-2 ${yoyChangePercent >= 0 ? "text-tertiary-container" : "text-error"}`}>
             {yoyChangePercent >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
             <span className="font-data-mono text-[13px]">
@@ -54,14 +59,16 @@ export function SummaryCards({
       </div>
 
       {/* Card 2: Households */}
-      <div className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group">
+      <div className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group animate-fade-in-up animate-stagger-2">
         <div className="absolute inset-0 bg-secondary-container/0 group-hover:bg-secondary-container/5 transition-colors duration-500 rounded-xl"></div>
         <div className="flex justify-between items-start mb-4 relative z-10">
           <h3 className="font-label-sm text-[12px] text-on-surface-variant uppercase tracking-widest">세대수</h3>
           <Home className="text-secondary-container" size={20} />
         </div>
         <div className="flex-grow flex flex-col justify-end relative z-10">
-          <div className="font-display-lg text-[36px] font-bold text-on-surface mb-1 leading-none">{formatPop(households)}</div>
+          <div className="font-display-lg text-[36px] font-bold text-on-surface mb-1 leading-none">
+            <AnimatedNumber value={households} formatter={formatPop} />
+          </div>
           <div className="flex items-center gap-2 mt-2 text-on-surface-variant">
             <span className="font-data-mono text-[13px]">
               세대당 {totalPopulation > 0 && households > 0 ? (totalPopulation / households).toFixed(2) : '-'}명
@@ -71,7 +78,7 @@ export function SummaryCards({
       </div>
 
       {/* Card 3: Gender Ratio */}
-      <div className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group">
+      <div className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group animate-fade-in-up animate-stagger-3">
         <div className="absolute inset-0 bg-primary-container/0 group-hover:bg-primary-container/5 transition-colors duration-500 rounded-xl"></div>
         <div className="flex justify-between items-start mb-4 relative z-10">
           <h3 className="font-label-sm text-[12px] text-on-surface-variant uppercase tracking-widest">남녀 구성</h3>
@@ -81,18 +88,22 @@ export function SummaryCards({
           <div className="flex items-baseline gap-3 mb-1">
             <div>
               <span className="font-data-mono text-[13px] text-on-surface-variant">남 </span>
-              <span className="font-display-lg text-[24px] font-bold text-on-surface">{formatPop(malePopulation)}</span>
+              <span className="font-display-lg text-[24px] font-bold text-on-surface">
+                <AnimatedNumber value={malePopulation} formatter={formatPop} />
+              </span>
             </div>
           </div>
           <div className="flex items-baseline gap-3">
             <div>
               <span className="font-data-mono text-[13px] text-on-surface-variant">여 </span>
-              <span className="font-display-lg text-[24px] font-bold text-on-surface">{formatPop(femalePopulation)}</span>
+              <span className="font-display-lg text-[24px] font-bold text-on-surface">
+                <AnimatedNumber value={femalePopulation} formatter={formatPop} />
+              </span>
             </div>
           </div>
-          {/* Gender ratio bar */}
+          {/* 성별 비율 바 */}
           <div className="w-full h-2 rounded-full bg-surface-container-highest mt-3 overflow-hidden">
-            <div 
+            <div
               className="h-full rounded-full bg-gradient-to-r from-primary-container to-secondary-container transition-all duration-700"
               style={{ width: `${malePopulation > 0 ? (malePopulation / (malePopulation + femalePopulation)) * 100 : 50}%` }}
             />
@@ -101,7 +112,7 @@ export function SummaryCards({
       </div>
 
       {/* Card 4: Regional Peak */}
-      <div className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group">
+      <div className="glass-panel rounded-xl p-6 flex flex-col relative overflow-hidden group animate-fade-in-up animate-stagger-4">
         <div className="absolute inset-0 bg-tertiary-container/0 group-hover:bg-tertiary-container/5 transition-colors duration-500 rounded-xl"></div>
         <div className="flex justify-between items-start mb-4 relative z-10">
           <h3 className="font-label-sm text-[12px] text-on-surface-variant uppercase tracking-widest">인구 증가 1위</h3>

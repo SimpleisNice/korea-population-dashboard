@@ -88,9 +88,10 @@ export function PopulationTrendChart({ data, title = "인구 추이" }: Populati
             ] : []}
             tooltip={({ point }) => (
               <div className="bg-surface-dim/95 backdrop-blur-xl text-on-surface px-4 py-2 rounded-lg border border-white/10 shadow-xl">
+                <div className="font-data-mono text-[11px] text-on-surface-variant mb-0.5">{String(point.seriesId)}</div>
                 <div className="font-data-mono text-[13px] font-semibold">{point.data.xFormatted}</div>
                 <div className="font-data-mono text-[12px] text-on-surface-variant">
-                  {Number(point.data.yFormatted).toLocaleString()}명
+                  {(point.data.y as number).toLocaleString()}명
                 </div>
               </div>
             )}
@@ -105,8 +106,13 @@ export function PopulationTrendChart({ data, title = "인구 추이" }: Populati
             }}
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-on-surface-variant">
-            데이터가 없습니다
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-on-surface-variant">
+            <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" />
+              </svg>
+            </div>
+            <p className="font-label-sm text-[12px]">데이터가 없습니다</p>
           </div>
         )}
       </div>

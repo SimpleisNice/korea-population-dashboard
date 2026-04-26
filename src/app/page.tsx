@@ -6,6 +6,9 @@ import { CityStatistics } from "@/components/dashboard/CityStatistics";
 import { DataComparison } from "@/components/dashboard/DataComparison";
 import { PopulationTrendChart } from "@/components/dashboard/PopulationTrendChart";
 import { RegionalShiftChart } from "@/components/dashboard/RegionalShiftChart";
+import { InsightCards } from "@/components/dashboard/InsightCards";
+import { Breadcrumb } from "@/components/dashboard/Breadcrumb";
+import { CityDetailView } from "@/components/dashboard/CityDetailView";
 import {
   getAvailableYears,
   getAvailableMonths,
@@ -14,6 +17,7 @@ import {
   getNationalSummary,
   getRegionSummary,
   getAllRegionSummaries,
+  getSubRegionSummaries,
   getRegionTrend,
   loadAllRecords,
 } from "@/lib/data";
@@ -47,6 +51,8 @@ export default async function Home(props: {
       : getLatestMonth(currentYear);
   const currentRegion =
     typeof searchParams.region === "string" ? searchParams.region : "전국";
+  const currentSubRegion =
+    typeof searchParams.subregion === "string" ? searchParams.subregion : null;
   const regions = getRegionList();
   const isNational = currentRegion === "전국";
 
@@ -58,7 +64,9 @@ export default async function Home(props: {
   let malePopulation = 0;
   let femalePopulation = 0;
 
-  if (isNational) {
+  const targetRegionName = currentSubRegion || currentRegion;
+
+  if (targetRegionName === "전국") {
     const nat = getNationalSummary(currentYear, currentMonth);
     totalPopulation = nat.totalPopulation;
     yoyChange = nat.yoyChange;
@@ -67,7 +75,7 @@ export default async function Home(props: {
     malePopulation = nat.malePopulation;
     femalePopulation = nat.femalePopulation;
   } else {
-    const rs = getRegionSummary(currentRegion, currentYear, currentMonth);
+    const rs = getRegionSummary(targetRegionName, currentYear, currentMonth);
     if (rs) {
       totalPopulation = rs.latestPopulation;
       yoyChange = rs.yoyChange;
@@ -79,7 +87,12 @@ export default async function Home(props: {
   }
 
   // ── All region summaries ─────────────────────────────────────
-  const allSummaries = getAllRegionSummaries(currentYear, currentMonth);
+  let allSummaries: ReturnType<typeof getAllRegionSummaries> = [];
+  if (isNational) {
+    allSummaries = getAllRegionSummaries(currentYear, currentMonth);
+  } else {
+    allSummaries = getSubRegionSummaries(currentRegion, currentYear, currentMonth);
+  }
   const peakSummary = allSummaries.reduce(
     (best, s) => (s.yoyChangePercent > best.yoyChangePercent ? s : best),
     allSummaries[0] || { regionName: "-", yoyChangePercent: 0 }
@@ -141,9 +154,11 @@ export default async function Home(props: {
     population: s.latestPopulation,
   }));
 
-  const regionLabel = isNational
-    ? "Korea"
-    : currentRegion.replace(/특별시|광역시|도$/, "");
+  const regionLabel = targetRegionName === "전국"
+    ? "전국"
+    : targetRegionName;
+
+  const targetTrendData = getRegionTrend(targetRegionName);
 
   return (
     <div className="flex w-full h-full">
@@ -163,7 +178,7 @@ export default async function Home(props: {
           <header className="flex justify-between items-center mb-4">
             <div>
               <h2 className="font-headline-md text-[24px] font-semibold text-on-surface">
-                {isNational ? "전국 인구 현황" : `${currentRegion} 인구 현황`}
+                <Breadcrumb region={currentRegion} subregion={currentSubRegion} />
               </h2>
               <p className="font-body-base text-[16px] text-on-surface-variant">
                 {currentYear}년 {MONTH_NAMES_KO[currentMonth]} 기준 주민등록 인구통계
@@ -179,32 +194,56 @@ export default async function Home(props: {
             </div>
           </header>
 
-          <SummaryCards
-            totalPopulation={totalPopulation}
-            yoyChange={yoyChange}
-            yoyChangePercent={yoyChangePercent}
-            households={households}
-            malePopulation={malePopulation}
-            femalePopulation={femalePopulation}
-            peakRegion={peakSummary.regionName?.replace(/\s+/g, "") || "-"}
-            peakGrowthPercent={peakSummary.yoyChangePercent || 0}
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <PopulationTrendChart
-                data={trendSeries}
-                title={
-                  isNational
-                    ? "월별 인구 추이 (서울 vs 경기)"
-                    : `${currentRegion} 월별 인구 추이`
-                }
+          {isNational ? (
+            <>
+              <SummaryCards
+                totalPopulation={totalPopulation}
+                yoyChange={yoyChange}
+                yoyChangePercent={yoyChangePercent}
+                households={households}
+                malePopulation={malePopulation}
+                femalePopulation={femalePopulation}
+                peakRegion={peakSummary.regionName?.replace(/\s+/g, "") || "-"}
+                peakGrowthPercent={peakSummary.yoyChangePercent || 0}
               />
-            </div>
-            <div className="lg:col-span-1">
-              <RegionalShiftChart data={shiftData} />
-            </div>
-          </div>
+
+              <InsightCards summaries={allSummaries} />
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div className="lg:col-span-2">
+                  <PopulationTrendChart
+                    data={trendSeries}
+                    title="월별 인구 추이 (서울 vs 경기)"
+                  />
+                </div>
+                <div className="lg:col-span-1">
+                  <RegionalShiftChart data={shiftData} />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <CityStatistics cities={cityStats} isSubRegion={false} />
+              </div>
+            </>
+          ) : (
+            <CityDetailView 
+              regionName={targetRegionName}
+              summary={{
+                regionCode: "0",
+                regionName: targetRegionName,
+                latestPopulation: totalPopulation,
+                previousPopulation: totalPopulation - yoyChange,
+                yoyChange,
+                yoyChangePercent,
+                households,
+                malePopulation,
+                femalePopulation,
+                genderRatio: femalePopulation > 0 ? malePopulation / femalePopulation : 0,
+              }}
+              subSummaries={allSummaries}
+              trendData={targetTrendData}
+            />
+          )}
         </div>
 
         {/* ──── Mobile layout ───────────────────────────────── */}
@@ -226,7 +265,7 @@ export default async function Home(props: {
             />
 
             {/* City Statistics */}
-            <CityStatistics cities={cityStats} />
+            <CityStatistics cities={cityStats} isSubRegion={!isNational} />
 
             {/* Trend Chart (mobile) */}
             <PopulationTrendChart

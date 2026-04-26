@@ -4,6 +4,7 @@ import {
   parseMOISPopulationCSV,
   MonthlyPopulationRecord,
   getTopLevelRegions,
+  getSubRegions,
   RegionSummary,
 } from './csv-parser';
 
@@ -133,6 +134,33 @@ export function getAllRegionSummaries(
   const summaries: RegionSummary[] = [];
 
   for (const regionName of regions) {
+    const summary = getRegionSummary(regionName, year, month);
+    if (summary) {
+      summaries.push(summary);
+    }
+  }
+
+  return summaries.sort((a, b) => b.latestPopulation - a.latestPopulation);
+}
+
+/**
+ * Get summaries of sub-regions for a given parent region.
+ */
+export function getSubRegionSummaries(
+  parentRegionName: string,
+  year: number,
+  month: number
+): RegionSummary[] {
+  const records = loadAllRecords();
+  const parent = records.find(
+    r => r.regionName === parentRegionName && r.year === year && r.month === month
+  );
+  if (!parent) return [];
+  
+  const subRegionNames = getSubRegions(records, parent.regionCode);
+  const summaries: RegionSummary[] = [];
+
+  for (const regionName of subRegionNames) {
     const summary = getRegionSummary(regionName, year, month);
     if (summary) {
       summaries.push(summary);
