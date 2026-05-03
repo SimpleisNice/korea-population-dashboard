@@ -76,10 +76,10 @@ export default async function RegionPage({
       <div style={{ padding: "0 16px 32px" }}>
         {/* 기준 정보 */}
         <p
-          className="text-xs"
+          className="text-[13px]"
           style={{
             color: "var(--color-text-secondary)",
-            margin: "16px 0 14px",
+            margin: "18px 0 16px",
           }}
         >
           {sidoName} · 2025년 4월 기준
@@ -111,34 +111,33 @@ export default async function RegionPage({
             style={{
               backgroundColor: "var(--color-bg)",
               boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-              padding: 14,
+              padding: "18px 20px",
             }}
           >
             <p
-              className="text-xs font-medium"
+              className="text-[13px] font-medium"
               style={{
                 color: "var(--color-text-secondary)",
-                margin: "0 0 4px",
+                margin: "0 0 8px",
               }}
             >
               성비 (남/여)
             </p>
             <p
               style={{
-                fontSize: 14,
-                fontWeight: 600,
+                fontSize: 17,
+                fontWeight: 700,
                 margin: 0,
-                lineHeight: 1.4,
+                lineHeight: 1.3,
               }}
             >
               <span style={{ color: "var(--color-accent)" }}>
                 {formatNumber(latest.male)}
               </span>
               <span
-                style={{ fontSize: 12, color: "var(--color-text-secondary)" }}
+                style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}
               >
-                {" "}
-                /{" "}
+                {" / "}
               </span>
               <span style={{ color: "var(--color-female)" }}>
                 {formatNumber(latest.female)}
@@ -149,16 +148,21 @@ export default async function RegionPage({
 
         {/* 인구 추이 차트 */}
         <div
-          className="rounded-xl p-4"
+          className="rounded-xl"
           style={{
             backgroundColor: "var(--color-bg)",
             boxShadow: "var(--shadow-card)",
             marginBottom: 20,
+            padding: "20px 20px 16px",
           }}
         >
           <p
-            className="mb-3 text-sm font-semibold"
-            style={{ color: "var(--color-text-primary)" }}
+            className="font-bold"
+            style={{
+              fontSize: 16,
+              color: "var(--color-text-primary)",
+              margin: "0 0 16px",
+            }}
           >
             인구 추이 (최근 12개월)
           </p>
@@ -168,11 +172,12 @@ export default async function RegionPage({
         {/* 상세보기 버튼 */}
         <Link
           href={`/${sido}/${sigungu}/detail`}
-          className="flex w-full items-center justify-between rounded-xl p-4 text-sm font-medium transition-colors"
+          className="flex w-full items-center justify-between rounded-xl text-[15px] font-semibold transition-colors"
           style={{
             backgroundColor: "var(--color-accent-light)",
             color: "var(--color-accent)",
             marginBottom: 20,
+            padding: "18px 20px",
           }}
         >
           <span>세대·연령·전입출 상세 정보</span>

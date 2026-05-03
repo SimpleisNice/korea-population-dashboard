@@ -18,35 +18,40 @@ export function StatCard({ label, value, change, unit, small }: Props) {
       style={{
         backgroundColor: "var(--color-bg)",
         boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        padding: 14,
+        padding: "18px 20px",
       }}
     >
       <p
-        className="mb-1 text-xs font-medium"
-        style={{ color: "var(--color-text-secondary)" }}
+        className="text-[13px] font-medium"
+        style={{
+          color: "var(--color-text-secondary)",
+          margin: "0 0 8px",
+        }}
       >
         {label}
       </p>
       <p
         style={{
-          fontSize: small ? 20 : 28,
-          fontWeight: 700,
+          fontSize: small ? 30 : 34,
+          fontWeight: 800,
           color: "var(--color-text-primary)",
           margin: 0,
-          lineHeight: 1.15,
+          lineHeight: 1.1,
+          letterSpacing: "-0.01em",
         }}
       >
         {typeof value === "number" ? formatNumber(value) : value}
         {unit && (
-          <span style={{ fontSize: 13, fontWeight: 500, marginLeft: 2 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, marginLeft: 3 }}>
             {unit}
           </span>
         )}
       </p>
       {change !== undefined && (
         <p
-          className="mt-1 text-xs font-medium"
+          className="text-[13px] font-semibold"
           style={{
+            margin: "8px 0 0",
             color: isPositive
               ? "var(--color-positive)"
               : isNegative
