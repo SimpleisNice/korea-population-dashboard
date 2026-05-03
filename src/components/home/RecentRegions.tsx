@@ -38,10 +38,10 @@ export function RecentRegions() {
 
   return (
     <section>
-      <div className="mb-2.5 flex items-center gap-1">
-        <Clock size={12} style={{ color: "var(--color-text-secondary)" }} />
+      <div className="mb-3 flex items-center gap-1.5">
+        <Clock size={13} style={{ color: "var(--color-text-secondary)" }} />
         <p
-          className="text-xs font-medium"
+          className="text-[13px] font-medium"
           style={{ color: "var(--color-text-secondary)" }}
         >
           최근 본 지역
@@ -60,30 +60,30 @@ export function RecentRegions() {
             href={regionPath(r.sido, r.sigungu)}
             className="flex items-center justify-between transition-colors hover:bg-[var(--color-surface)]"
             style={{
-              height: 48,
-              padding: "0 16px",
+              height: 64,
+              padding: "0 18px",
               borderBottom:
                 i < regions.length - 1
                   ? "1px solid var(--color-border)"
                   : "none",
             }}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-baseline gap-2">
               <span
-                className="text-sm font-medium"
+                className="text-[15px] font-bold"
                 style={{ color: "var(--color-text-primary)" }}
               >
                 {r.sigungu}
               </span>
               <span
-                className="text-xs"
+                className="text-[13px]"
                 style={{ color: "var(--color-text-secondary)" }}
               >
                 {r.sido}
               </span>
             </div>
             <ChevronRight
-              size={16}
+              size={18}
               style={{ color: "var(--color-accent)", flexShrink: 0 }}
             />
           </Link>

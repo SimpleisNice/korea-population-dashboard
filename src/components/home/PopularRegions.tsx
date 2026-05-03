@@ -10,23 +10,23 @@ export function PopularRegions({ regions }: Props) {
   return (
     <section>
       <p
-        className="mb-2.5 text-xs font-medium"
+        className="mb-3 text-[13px] font-medium"
         style={{ color: "var(--color-text-secondary)" }}
       >
         인기 지역
       </p>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2.5">
         {regions.map((region) => (
           <Link
             key={region.code}
             href={regionPath(region.sido, region.sigungu)}
-            className="rounded-full border text-sm font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+            className="rounded-full border text-sm font-semibold transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             style={{
               borderColor: "var(--color-border)",
               color: "var(--color-text-primary)",
               backgroundColor: "var(--color-bg)",
-              height: 32,
-              padding: "0 12px",
+              height: 40,
+              padding: "0 18px",
               display: "inline-flex",
               alignItems: "center",
               whiteSpace: "nowrap",
