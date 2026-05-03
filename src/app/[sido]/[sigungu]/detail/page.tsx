@@ -37,14 +37,22 @@ export default async function DetailPage({ params }: { params: Promise<Params> }
         showSearch
       />
 
-      <div className="px-4 py-5 space-y-5">
-        <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+      <div style={{ padding: '0 16px 32px' }}>
+        <p
+          className="text-[13px]"
+          style={{
+            color: 'var(--color-text-secondary)',
+            margin: '18px 0 16px',
+          }}
+        >
           {sidoName} · 2025년 4월 기준
         </p>
 
         <DetailTabs detail={detail} />
 
-        <AdSlot />
+        <div style={{ marginTop: 20 }}>
+          <AdSlot />
+        </div>
       </div>
     </MobileShell>
   )

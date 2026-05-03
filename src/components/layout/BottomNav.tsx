@@ -3,8 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-function HomeIcon({ active }: { active: boolean }) {
-  const color = active ? '#2563EB' : '#6B7280'
+function HomeIcon({ color }: { color: string }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -13,8 +12,7 @@ function HomeIcon({ active }: { active: boolean }) {
   )
 }
 
-function CompareIcon({ active }: { active: boolean }) {
-  const color = active ? '#2563EB' : '#6B7280'
+function CompareIcon({ color }: { color: string }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="17 1 21 5 17 9" />
@@ -29,6 +27,9 @@ export function BottomNav() {
   const pathname = usePathname()
   const isCompare = pathname.startsWith('/compare')
 
+  const homeColor = isCompare ? 'var(--color-text-secondary)' : 'var(--color-accent)'
+  const compareColor = isCompare ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+
   return (
     <nav
       style={{
@@ -39,8 +40,8 @@ export function BottomNav() {
         width: '100%',
         maxWidth: 'var(--max-w)',
         height: 72,
-        background: '#ffffff',
-        borderTop: '1px solid #E5E7EB',
+        background: 'var(--color-bg)',
+        borderTop: '1px solid var(--color-border)',
         display: 'flex',
         alignItems: 'flex-start',
         paddingTop: 10,
@@ -58,8 +59,8 @@ export function BottomNav() {
           textDecoration: 'none',
         }}
       >
-        <HomeIcon active={!isCompare} />
-        <span style={{ fontSize: 10, fontWeight: 500, color: !isCompare ? '#2563EB' : '#6B7280' }}>홈</span>
+        <HomeIcon color={homeColor} />
+        <span style={{ fontSize: 11, fontWeight: 500, color: homeColor }}>홈</span>
       </Link>
       <Link
         href="/compare"
@@ -72,8 +73,8 @@ export function BottomNav() {
           textDecoration: 'none',
         }}
       >
-        <CompareIcon active={isCompare} />
-        <span style={{ fontSize: 10, fontWeight: 500, color: isCompare ? '#2563EB' : '#6B7280' }}>비교</span>
+        <CompareIcon color={compareColor} />
+        <span style={{ fontSize: 11, fontWeight: 500, color: compareColor }}>비교</span>
       </Link>
     </nav>
   )

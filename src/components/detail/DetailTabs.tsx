@@ -32,7 +32,7 @@ export function DetailTabs({ detail }: Props) {
           <Tabs.Trigger
             key={tab.id}
             value={tab.id}
-            className="flex-1 rounded-lg text-xs font-medium transition-all"
+            className="flex-1 rounded-lg text-[13px] font-semibold transition-all"
             style={{ height: 36 }}
           >
             {tab.label}

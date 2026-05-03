@@ -25,13 +25,7 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
+html, body {
   background-color: var(--color-surface);
   color: var(--color-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Noto Sans KR', sans-serif;
@@ -43,12 +37,12 @@ body {
 }
 
 /* Radix Tabs */
-[data-radix-tabs-trigger][data-state='active'] {
+[role='tab'][data-state='active'] {
   background-color: var(--color-bg);
   color: var(--color-accent);
   box-shadow: var(--shadow-card);
 }
-[data-radix-tabs-trigger][data-state='inactive'] {
+[role='tab'][data-state='inactive'] {
   background-color: transparent;
   color: var(--color-text-secondary);
 }
