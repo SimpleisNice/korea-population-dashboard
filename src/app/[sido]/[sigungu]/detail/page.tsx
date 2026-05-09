@@ -4,7 +4,7 @@ import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
 import { DetailTabs } from '@/components/detail/DetailTabs'
 import { AdSlot } from '@/components/ads/AdSlot'
-import { getMockRegionDetail, getRegionBySlug } from '@/lib/mock-data'
+import { getRegionDetail, getRegionBySlug } from '@/lib/data'
 
 interface Params {
   sido: string
@@ -25,7 +25,7 @@ export default async function DetailPage({ params }: { params: Promise<Params> }
   const region = getRegionBySlug(sidoName, sigunguName)
   if (!region) notFound()
 
-  const detail = getMockRegionDetail(region.code)
+  const detail = getRegionDetail(region.code)
   if (!detail) notFound()
 
   return (

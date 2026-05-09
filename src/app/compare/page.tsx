@@ -4,7 +4,7 @@ import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
 import { CompareClient } from '@/components/compare/CompareClient'
 import { AdSlot } from '@/components/ads/AdSlot'
-import { REGIONS } from '@/lib/mock-data'
+import { getAllRegions, getRegionDetail } from '@/lib/data'
 
 export const metadata: Metadata = {
   title: '지역 비교',
@@ -19,8 +19,11 @@ interface SearchParams {
 export default async function ComparePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const { a, b } = await searchParams
 
-  const initialA = a ? (REGIONS.find(r => r.code === a) ?? null) : null
-  const initialB = b ? (REGIONS.find(r => r.code === b) ?? null) : null
+  const regions = getAllRegions()
+  const initialA = a ? (regions.find(r => r.code === a) ?? null) : null
+  const initialB = b ? (regions.find(r => r.code === b) ?? null) : null
+  const initialDetailA = initialA ? getRegionDetail(initialA.code) : null
+  const initialDetailB = initialB ? getRegionDetail(initialB.code) : null
 
   return (
     <MobileShell>
@@ -28,7 +31,13 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
       <div className="px-4 py-5 space-y-5">
         <Suspense>
-          <CompareClient regions={REGIONS} initialA={initialA} initialB={initialB} />
+          <CompareClient
+            regions={regions}
+            initialA={initialA}
+            initialB={initialB}
+            initialDetailA={initialDetailA}
+            initialDetailB={initialDetailB}
+          />
         </Suspense>
 
         <AdSlot />

@@ -7,7 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { StatCard } from "@/components/region/StatCard";
 import { TrendChart } from "@/components/region/TrendChart";
 import { AdSlot } from "@/components/ads/AdSlot";
-import { getMockRegionDetail, getRegionBySlug } from "@/lib/mock-data";
+import { getRegionDetail, getRegionBySlug } from "@/lib/data";
 import { formatNumber } from "@/lib/utils";
 
 interface Params {
@@ -41,7 +41,7 @@ export default async function RegionPage({
   const region = getRegionBySlug(sidoName, sigunguName);
   if (!region) notFound();
 
-  const detail = getMockRegionDetail(region.code);
+  const detail = getRegionDetail(region.code);
   if (!detail) notFound();
 
   const { latest, prevMonth, trend } = detail;

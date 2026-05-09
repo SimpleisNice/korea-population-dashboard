@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Noto_Sans_KR } from 'next/font/google'
+import Script from 'next/script'
 import { BottomNav } from '@/components/layout/BottomNav'
 import './globals.css'
 
@@ -9,6 +10,8 @@ const notoSansKr = Noto_Sans_KR({
   display: 'swap',
 })
 
+const adsensePublisherId = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
+
 export const metadata: Metadata = {
   title: {
     template: '%s | 인구통계',
@@ -16,6 +19,9 @@ export const metadata: Metadata = {
   },
   description: '부동산 구매 전 꼭 확인하는 시군구 인구 통계. 인구 추이, 세대수, 연령 구조, 전입출 현황을 한눈에 확인하세요.',
   keywords: ['인구통계', '시군구 인구', '부동산', '인구 추이', '세대수'],
+  verification: {
+    google: process.env.NEXT_GOOGLE_SITE_VERIFICATION,
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +30,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <BottomNav />
+        {adsensePublisherId && (
+          <Script
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsensePublisherId}`}
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+          />
+        )}
       </body>
     </html>
   )

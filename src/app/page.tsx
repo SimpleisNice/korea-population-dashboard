@@ -3,16 +3,18 @@ import { MobileShell } from "@/components/layout/MobileShell";
 import { RegionSearch } from "@/components/home/RegionSearch";
 import { PopularRegions } from "@/components/home/PopularRegions";
 import { RecentRegions } from "@/components/home/RecentRegions";
-import { REGIONS, POPULAR_REGIONS } from "@/lib/mock-data";
+import { getAllRegions, getPopularRegions } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "부동산 인구통계 — 시군구 인구 현황",
 };
 
 export default function HomePage() {
-  const popularRegions = POPULAR_REGIONS.map(
-    (code) => REGIONS.find((r) => r.code === code)!,
-  ).filter(Boolean);
+  const regions = getAllRegions();
+  const popularCodes = getPopularRegions();
+  const popularRegions = popularCodes
+    .map((code) => regions.find((r) => r.code === code))
+    .filter((r): r is NonNullable<typeof r> => r != null);
 
   return (
     <MobileShell>
@@ -35,7 +37,7 @@ export default function HomePage() {
 
         {/* 검색창 */}
         <div style={{ marginBottom: 28 }}>
-          <RegionSearch regions={REGIONS} />
+          <RegionSearch regions={regions} />
         </div>
 
         {/* 인기 지역 */}

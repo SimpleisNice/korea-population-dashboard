@@ -13,13 +13,15 @@ import {
 } from "recharts";
 import { CompareSearch } from "./CompareSearch";
 import type { Region, RegionDetail } from "@/lib/types";
-import { getMockRegionDetail } from "@/lib/mock-data";
+import { fetchRegionDetail } from "@/lib/actions";
 import { formatNumber } from "@/lib/utils";
 
 interface Props {
   regions: Region[];
   initialA: Region | null;
   initialB: Region | null;
+  initialDetailA: RegionDetail | null;
+  initialDetailB: RegionDetail | null;
 }
 
 const COLOR_A = "var(--color-accent)";
@@ -58,15 +60,24 @@ function Metric({
   );
 }
 
-export function CompareClient({ regions, initialA, initialB }: Props) {
+export function CompareClient({ regions, initialA, initialB, initialDetailA, initialDetailB }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [regionA, setRegionA] = useState<Region | null>(initialA);
   const [regionB, setRegionB] = useState<Region | null>(initialB);
+  const [detailA, setDetailA] = useState<RegionDetail | null>(initialDetailA);
+  const [detailB, setDetailB] = useState<RegionDetail | null>(initialDetailB);
 
-  const detailA = regionA ? getMockRegionDetail(regionA.code) : null;
-  const detailB = regionB ? getMockRegionDetail(regionB.code) : null;
+  useEffect(() => {
+    if (!regionA) { setDetailA(null); return }
+    fetchRegionDetail(regionA.code).then(d => setDetailA(d));
+  }, [regionA?.code]);
+
+  useEffect(() => {
+    if (!regionB) { setDetailB(null); return }
+    fetchRegionDetail(regionB.code).then(d => setDetailB(d));
+  }, [regionB?.code]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
