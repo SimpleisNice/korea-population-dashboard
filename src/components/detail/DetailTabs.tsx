@@ -3,7 +3,7 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import { TrendChart } from "@/components/region/TrendChart";
 import { AgeChart } from "./AgeChart";
-import { MigrationChart } from "./MigrationChart";
+import { ChangeChart } from "./ChangeChart";
 import { StatCard } from "@/components/region/StatCard";
 import type { RegionDetail } from "@/lib/types";
 
@@ -11,7 +11,7 @@ const TABS = [
   { id: "trend", label: "인구추이" },
   { id: "household", label: "세대" },
   { id: "age", label: "연령" },
-  { id: "migration", label: "전입출" },
+  { id: "change", label: "증감" },
 ];
 
 interface Props {
@@ -19,7 +19,7 @@ interface Props {
 }
 
 export function DetailTabs({ detail }: Props) {
-  const { latest, prevMonth, trend, ageGroups, migration } = detail;
+  const { latest, prevMonth, trend, ageGroups } = detail;
 
   return (
     <Tabs.Root defaultValue="trend" className="space-y-4">
@@ -167,7 +167,7 @@ export function DetailTabs({ detail }: Props) {
         </div>
       </Tabs.Content>
 
-      <Tabs.Content value="migration">
+      <Tabs.Content value="change">
         <div
           className="rounded-xl p-4"
           style={{
@@ -179,9 +179,9 @@ export function DetailTabs({ detail }: Props) {
             className="mb-3 text-sm font-semibold"
             style={{ color: "var(--color-text-primary)" }}
           >
-            전입·전출 현황 (최근 12개월)
+            월별 인구 증감
           </p>
-          <MigrationChart data={migration} />
+          <ChangeChart data={trend} />
         </div>
       </Tabs.Content>
     </Tabs.Root>

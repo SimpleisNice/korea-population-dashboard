@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -7,12 +8,23 @@ import { Header } from "@/components/layout/Header";
 import { StatCard } from "@/components/region/StatCard";
 import { TrendChart } from "@/components/region/TrendChart";
 import { AdSlot } from "@/components/ads/AdSlot";
-import { getRegionDetail, getRegionBySlug } from "@/lib/data";
+import { MonthPicker } from "@/components/ui/MonthPicker";
+import { TimePeriodCompare } from "@/components/region/TimePeriodCompare";
+import { getRegionDetail, getRegionBySlug, getAvailableMonths } from "@/lib/data";
 import { formatNumber } from "@/lib/utils";
 
 interface Params {
   sido: string;
   sigungu: string;
+}
+
+interface SearchParams {
+  ym?: string;
+  cmp?: string;
+}
+
+function formatYM(ym: string) {
+  return `${ym.slice(0, 4)}년 ${parseInt(ym.slice(4))}월`;
 }
 
 export async function generateMetadata({
@@ -24,35 +36,38 @@ export async function generateMetadata({
   const sidoName = decodeURIComponent(sido);
   const sigunguName = decodeURIComponent(sigungu);
   return {
-    title: `${sigunguName} 인구통계 2025년 4월`,
+    title: `${sigunguName} 인구통계`,
     description: `${sidoName} ${sigunguName} 인구 현황. 총인구, 세대수, 인구 추이를 확인하세요.`,
   };
 }
 
 export default async function RegionPage({
   params,
+  searchParams,
 }: {
   params: Promise<Params>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { sido, sigungu } = await params;
+  const { ym } = await searchParams;
   const sidoName = decodeURIComponent(sido);
   const sigunguName = decodeURIComponent(sigungu);
 
   const region = getRegionBySlug(sidoName, sigunguName);
   if (!region) notFound();
 
-  const detail = getRegionDetail(region.code);
+  const availableMonths = getAvailableMonths();
+  const latestMonth = availableMonths[availableMonths.length - 1];
+  const currentMonth = ym && availableMonths.includes(ym) ? ym : latestMonth;
+
+  const detail = getRegionDetail(region.code, currentMonth);
   if (!detail) notFound();
 
   const { latest, prevMonth, trend } = detail;
-  const popChange = prevMonth
-    ? latest.population - prevMonth.population
-    : undefined;
-  const hhChange = prevMonth
-    ? latest.households - prevMonth.households
-    : undefined;
+  const popChange = prevMonth ? latest.population - prevMonth.population : undefined;
+  const hhChange = prevMonth ? latest.households - prevMonth.households : undefined;
 
-  const compareUrl = `/compare?a=${region.code}`;
+  const compareUrl = `/compare?a=${region.code}&ym=${currentMonth}`;
 
   return (
     <MobileShell>
@@ -74,38 +89,29 @@ export default async function RegionPage({
       />
 
       <div style={{ padding: "0 16px 32px" }}>
+        {/* 기준월 선택 */}
+        <div style={{ margin: "16px 0" }}>
+          <Suspense>
+            <MonthPicker availableMonths={availableMonths} current={currentMonth} />
+          </Suspense>
+        </div>
+
         {/* 기준 정보 */}
         <p
           className="text-[13px]"
-          style={{
-            color: "var(--color-text-secondary)",
-            margin: "18px 0 16px",
-          }}
+          style={{ color: "var(--color-text-secondary)", margin: "0 0 16px" }}
         >
-          {sidoName} · 2025년 4월 기준
+          {sidoName} · {formatYM(currentMonth)} 기준
         </p>
 
         {/* 핵심 지표 */}
         <div className="flex gap-3" style={{ marginBottom: 12 }}>
-          <StatCard
-            label="총 인구"
-            value={latest.population}
-            change={popChange}
-          />
-          <StatCard
-            label="세대수"
-            value={latest.households}
-            change={hhChange}
-          />
+          <StatCard label="총 인구" value={latest.population} change={popChange} />
+          <StatCard label="세대수" value={latest.households} change={hhChange} />
         </div>
 
         <div className="flex gap-3" style={{ marginBottom: 20 }}>
-          <StatCard
-            label="세대당 인구"
-            value={latest.householdSize}
-            unit="명"
-            small
-          />
+          <StatCard label="세대당 인구" value={latest.householdSize} unit="명" small />
           <div
             className="flex-1 rounded-xl"
             style={{
@@ -116,32 +122,14 @@ export default async function RegionPage({
           >
             <p
               className="text-[13px] font-medium"
-              style={{
-                color: "var(--color-text-secondary)",
-                margin: "0 0 8px",
-              }}
+              style={{ color: "var(--color-text-secondary)", margin: "0 0 8px" }}
             >
               성비 (남/여)
             </p>
-            <p
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-                margin: 0,
-                lineHeight: 1.3,
-              }}
-            >
-              <span style={{ color: "var(--color-accent)" }}>
-                {formatNumber(latest.male)}
-              </span>
-              <span
-                style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}
-              >
-                {" / "}
-              </span>
-              <span style={{ color: "var(--color-female)" }}>
-                {formatNumber(latest.female)}
-              </span>
+            <p style={{ fontSize: 17, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
+              <span style={{ color: "var(--color-accent)" }}>{formatNumber(latest.male)}</span>
+              <span style={{ color: "var(--color-text-secondary)", fontWeight: 500 }}>{" / "}</span>
+              <span style={{ color: "var(--color-female)" }}>{formatNumber(latest.female)}</span>
             </p>
           </div>
         </div>
@@ -158,20 +146,26 @@ export default async function RegionPage({
         >
           <p
             className="font-bold"
-            style={{
-              fontSize: 16,
-              color: "var(--color-text-primary)",
-              margin: "0 0 16px",
-            }}
+            style={{ fontSize: 16, color: "var(--color-text-primary)", margin: "0 0 16px" }}
           >
             인구 추이 (최근 12개월)
           </p>
           <TrendChart data={trend} />
         </div>
 
+        {/* 시점 비교 */}
+        <Suspense>
+          <TimePeriodCompare
+            regionCode={region.code}
+            currentMonth={currentMonth}
+            availableMonths={availableMonths}
+            currentStats={latest}
+          />
+        </Suspense>
+
         {/* 상세보기 버튼 */}
         <Link
-          href={`/${sido}/${sigungu}/detail`}
+          href={`/${sido}/${sigungu}/detail?ym=${currentMonth}`}
           className="flex w-full items-center justify-between rounded-xl text-[15px] font-semibold transition-colors"
           style={{
             backgroundColor: "var(--color-accent-light)",
@@ -180,7 +174,7 @@ export default async function RegionPage({
             padding: "18px 20px",
           }}
         >
-          <span>세대·연령·전입출 상세 정보</span>
+          <span>세대·연령·증감 상세 정보</span>
           <ChevronRight size={18} />
         </Link>
 

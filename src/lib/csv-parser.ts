@@ -1,4 +1,4 @@
-import type { MonthlyStats, Region } from './types'
+import type { MonthlyStats, Region, AgeGroup } from './types'
 
 const SIDO_BY_PREFIX: Record<string, string> = {
   '11': '서울특별시',
@@ -105,4 +105,71 @@ export function parseMoisCSV(content: string): ParsedCSV {
   }
 
   return { regions, data }
+}
+
+// ── Age CSV parser ────────────────────────────────────────────────────────────
+// Structure: Row1=meta, Row2=month labels (every 39 cols from col2),
+//            Row3=계/남/여, Row4=column headers, Row5+=data
+// Per month at base: male ages at base+15..+25, female at base+28..+38
+// 11 CSV age groups → 9 service groups (80~89 + 90~99 + 100이상 → 80+)
+
+export interface ParsedAgeCSV {
+  data: Map<string, Map<string, AgeGroup[]>>
+}
+
+export function parseAgeCSV(content: string): ParsedAgeCSV {
+  const text = content.startsWith('﻿') ? content.slice(1) : content
+  const lines = text.split(/\r?\n/).filter(l => l.trim())
+
+  const monthRow = splitCSVLine(lines[1])
+  const months: Array<{ colOffset: number; key: string }> = []
+  for (let i = 2; i < monthRow.length; i++) {
+    const match = monthRow[i].match(/(\d{4})년(\d{2})월/)
+    if (match) {
+      months.push({ colOffset: i, key: `${match[1]}${match[2]}` })
+    }
+  }
+
+  const data = new Map<string, Map<string, AgeGroup[]>>()
+
+  // data rows start at index 4 (one extra header row vs household CSV)
+  for (let rowIdx = 4; rowIdx < lines.length; rowIdx++) {
+    const cols = splitCSVLine(lines[rowIdx])
+    const code = cols[0].replace(/\s/g, '')
+    if (!/^\d{10}$/.test(code)) continue
+    if (code.endsWith('00000000')) continue
+
+    const prefix = code.slice(0, 2)
+    if (!SIDO_BY_PREFIX[prefix]) continue
+
+    const monthMap = data.get(code) ?? new Map<string, AgeGroup[]>()
+
+    for (const { colOffset: base, key } of months) {
+      if (base + 38 >= cols.length) continue
+      const g = (i: number) => parseKoreanNumber(cols[i] ?? '0')
+
+      const ageGroups: AgeGroup[] = [
+        { label: '0–9',   male: g(base+15), female: g(base+28) },
+        { label: '10–19', male: g(base+16), female: g(base+29) },
+        { label: '20–29', male: g(base+17), female: g(base+30) },
+        { label: '30–39', male: g(base+18), female: g(base+31) },
+        { label: '40–49', male: g(base+19), female: g(base+32) },
+        { label: '50–59', male: g(base+20), female: g(base+33) },
+        { label: '60–69', male: g(base+21), female: g(base+34) },
+        { label: '70–79', male: g(base+22), female: g(base+35) },
+        {
+          label: '80+',
+          male:   g(base+23) + g(base+24) + g(base+25),
+          female: g(base+36) + g(base+37) + g(base+38),
+        },
+      ]
+
+      if (ageGroups[0].male + ageGroups[0].female === 0) continue
+      monthMap.set(key, ageGroups)
+    }
+
+    data.set(code, monthMap)
+  }
+
+  return { data }
 }

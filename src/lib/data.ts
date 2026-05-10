@@ -1,37 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import { parseMoisCSV } from './csv-parser'
-import type { Region, RegionDetail, TrendPoint, AgeGroup, MigrationPoint, MonthlyStats } from './types'
-
-// ── mock generators (연령/전입출 CSV 미제공 시 임시) ─────────────────────────
-
-function makeAgeGroups(seed: number): AgeGroup[] {
-  const labels = ['0–9', '10–19', '20–29', '30–39', '40–49', '50–59', '60–69', '70–79', '80+']
-  let s = seed
-  return labels.map(label => {
-    s = (s * 1664525 + 1013904223) & 0x7fffffff
-    const male = (s % 15000) + 8000
-    s = (s * 1664525 + 1013904223) & 0x7fffffff
-    const female = (s % 15000) + 8000
-    return { label, male, female }
-  })
-}
-
-function makeMigration(seed: number, months: string[]): MigrationPoint[] {
-  let s = seed
-  return months.map(key => {
-    s = (s * 1664525 + 1013904223) & 0x7fffffff
-    const inflow = (s % 3000) + 1000
-    s = (s * 1664525 + 1013904223) & 0x7fffffff
-    const outflow = (s % 3000) + 1000
-    return {
-      label: `${key.slice(0, 4)}.${key.slice(4)}`,
-      inflow,
-      outflow,
-      net: inflow - outflow,
-    }
-  })
-}
+import { parseMoisCSV, parseAgeCSV } from './csv-parser'
+import type { Region, RegionDetail, TrendPoint, AgeGroup, MonthlyStats } from './types'
 
 // ── data loading & caching ────────────────────────────────────────────────────
 
@@ -46,13 +16,14 @@ const POPULAR_CODES = [
 
 let regionsCache: Region[] | null = null
 let allDataCache: Map<string, Map<string, MonthlyStats>> | null = null
+let ageDataCache: Map<string, Map<string, AgeGroup[]>> | null = null
 
 function loadData() {
   if (regionsCache && allDataCache) return { regions: regionsCache, data: allDataCache }
 
   const dataDir = path.join(process.cwd(), 'public', 'data')
   const files = fs.readdirSync(dataDir)
-    .filter(f => /^resident_population_household_status_\d{6}_\d{6}\.csv$/.test(f))
+    .filter(f => /^\d{4}_(first|second)_half_registered_population_and_household_monthly\.csv$/.test(f))
     .sort()
 
   const mergedData = new Map<string, Map<string, MonthlyStats>>()
@@ -75,6 +46,31 @@ function loadData() {
   return { regions: latestRegions, data: mergedData }
 }
 
+function loadAgeData(): Map<string, Map<string, AgeGroup[]>> {
+  if (ageDataCache) return ageDataCache
+
+  const dataDir = path.join(process.cwd(), 'public', 'data')
+  const files = fs.readdirSync(dataDir)
+    .filter(f => /^\d{4}_(first|second)_half_population_by_age_monthly\.csv$/.test(f))
+    .sort()
+
+  const merged = new Map<string, Map<string, AgeGroup[]>>()
+
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(dataDir, file), 'utf-8')
+    const { data } = parseAgeCSV(content)
+    for (const [code, monthMap] of data) {
+      if (!merged.has(code)) merged.set(code, new Map())
+      for (const [yyyymm, groups] of monthMap) {
+        merged.get(code)!.set(yyyymm, groups)
+      }
+    }
+  }
+
+  ageDataCache = merged
+  return merged
+}
+
 // ── public API ────────────────────────────────────────────────────────────────
 
 export function getAllRegions(): Region[] {
@@ -89,7 +85,21 @@ export function getRegionBySlug(sido: string, sigungu: string): Region | null {
   return getAllRegions().find(r => r.sido === sido && r.sigungu === sigungu) ?? null
 }
 
-export function getRegionDetail(code: string): RegionDetail | null {
+export function getAvailableMonths(): string[] {
+  const { data } = loadData()
+  const monthSet = new Set<string>()
+  for (const monthMap of data.values()) {
+    for (const key of monthMap.keys()) monthSet.add(key)
+    break // all regions share the same month set
+  }
+  return [...monthSet].sort()
+}
+
+export function getMonthStats(code: string, ym: string): MonthlyStats | null {
+  return loadData().data.get(code)?.get(ym) ?? null
+}
+
+export function getRegionDetail(code: string, refMonth?: string): RegionDetail | null {
   const { regions, data } = loadData()
   const region = regions.find(r => r.code === code)
   if (!region) return null
@@ -98,12 +108,22 @@ export function getRegionDetail(code: string): RegionDetail | null {
   if (!monthMap) return null
 
   const sortedKeys = [...monthMap.keys()].sort()
-  const recentKeys = sortedKeys.slice(-12)
+  if (sortedKeys.length === 0) return null
+
+  // Determine the 12-month window ending at refMonth (or latest)
+  const refIdx = refMonth ? sortedKeys.indexOf(refMonth) : -1
+  const endIdx = refIdx >= 0 ? refIdx : sortedKeys.length - 1
+  const startIdx = Math.max(0, endIdx - 11)
+  const recentKeys = sortedKeys.slice(startIdx, endIdx + 1)
   if (recentKeys.length === 0) return null
+
+  // Include the key before the window for computing the first change value
+  const preKey = startIdx > 0 ? sortedKeys[startIdx - 1] : null
 
   const trend: TrendPoint[] = recentKeys.map((key, i) => {
     const stats = monthMap.get(key)!
-    const prevStats = i > 0 ? monthMap.get(recentKeys[i - 1]) : null
+    const prevKey = i > 0 ? recentKeys[i - 1] : preKey
+    const prevStats = prevKey ? monthMap.get(prevKey) : null
     return {
       label: `${key.slice(0, 4)}.${key.slice(4)}`,
       population: stats.population,
@@ -117,14 +137,15 @@ export function getRegionDetail(code: string): RegionDetail | null {
     ? monthMap.get(recentKeys[recentKeys.length - 2]) ?? null
     : null
 
-  const seed = parseInt(code.slice(0, 6), 10)
+  const ageMonthMap = loadAgeData().get(code)
+  const latestAgeKey = ageMonthMap ? [...ageMonthMap.keys()].sort().at(-1) : undefined
+  const ageGroups: AgeGroup[] = (latestAgeKey ? ageMonthMap?.get(latestAgeKey) : undefined) ?? []
 
   return {
     region,
     latest,
     prevMonth,
     trend,
-    ageGroups: makeAgeGroups(seed),
-    migration: makeMigration(seed, recentKeys),
+    ageGroups,
   }
 }
