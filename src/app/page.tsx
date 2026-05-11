@@ -3,7 +3,6 @@ import { MobileShell } from "@/components/layout/MobileShell";
 import { RegionSearch } from "@/components/home/RegionSearch";
 import { PopularRegions } from "@/components/home/PopularRegions";
 import { RecentRegions } from "@/components/home/RecentRegions";
-import { AdSlot } from "@/components/ads/AdSlot";
 import { getAllRegions, getPopularRegions } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -48,11 +47,6 @@ export default function HomePage() {
 
         {/* 최근 본 지역 */}
         <RecentRegions />
-
-        {/* 광고 */}
-        <div style={{ marginTop: 28 }}>
-          <AdSlot />
-        </div>
       </div>
     </MobileShell>
   );

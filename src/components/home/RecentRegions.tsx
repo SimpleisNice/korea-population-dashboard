@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 import Link from "next/link";
 import { Clock, ChevronRight } from "lucide-react";
 import { regionPath } from "@/lib/utils";
@@ -31,7 +31,7 @@ export function RecentRegions() {
     const stored: RecentRegion[] = JSON.parse(
       localStorage.getItem(STORAGE_KEY) ?? "[]",
     );
-    setRegions(stored);
+    startTransition(() => setRegions(stored));
   }, []);
 
   if (regions.length === 0) return null;

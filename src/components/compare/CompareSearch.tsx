@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import Fuse from 'fuse.js'
 import { Search, X } from 'lucide-react'
 import type { Region } from '@/lib/types'
@@ -15,17 +15,17 @@ interface Props {
 
 export function CompareSearch({ regions, label, selected, onSelect, onClear }: Props) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Region[]>([])
   const [open, setOpen] = useState(false)
 
-  const fuse = useRef(
-    new Fuse(regions, { keys: ['sigungu', 'sido'], threshold: 0.35 })
+  const fuse = useMemo(
+    () => new Fuse(regions, { keys: ['sigungu', 'sido'], threshold: 0.35 }),
+    [regions]
   )
 
-  useEffect(() => {
-    if (!query.trim()) { setResults([]); return }
-    setResults(fuse.current.search(query).slice(0, 6).map(r => r.item))
-  }, [query])
+  const results = useMemo(() => {
+    if (!query.trim()) return []
+    return fuse.search(query).slice(0, 6).map(r => r.item)
+  }, [fuse, query])
 
   const accentColor = label === 'A' ? 'var(--color-accent)' : '#7c3aed'
 

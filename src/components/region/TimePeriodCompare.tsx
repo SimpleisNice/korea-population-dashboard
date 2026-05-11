@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { GitCompare, X } from 'lucide-react'
 import { fetchMonthStats } from '@/lib/actions'
@@ -62,9 +62,14 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!cmp || !availableMonths.includes(cmp)) { setCmpStats(null); return }
-    setLoading(true)
-    fetchMonthStats(regionCode, cmp).then(s => { setCmpStats(s); setLoading(false) })
+    if (!cmp || !availableMonths.includes(cmp)) {
+      startTransition(() => setCmpStats(null))
+      return
+    }
+    startTransition(() => setLoading(true))
+    fetchMonthStats(regionCode, cmp).then(s => {
+      startTransition(() => { setCmpStats(s); setLoading(false) })
+    })
   }, [cmp, regionCode, availableMonths])
 
   const setCmp = useCallback(

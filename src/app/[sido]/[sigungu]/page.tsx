@@ -67,7 +67,7 @@ export default async function RegionPage({
   const popChange = prevMonth ? latest.population - prevMonth.population : undefined;
   const hhChange = prevMonth ? latest.households - prevMonth.households : undefined;
 
-  const compareUrl = `/compare?a=${region.code}&ym=${currentMonth}`;
+  const compareUrl = `/compare?region_a=${region.code}&ym=${currentMonth}`;
 
   return (
     <MobileShell>

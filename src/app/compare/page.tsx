@@ -12,21 +12,21 @@ export const metadata: Metadata = {
 }
 
 interface SearchParams {
-  a?: string
-  b?: string
+  region_a?: string
+  region_b?: string
   ym?: string
 }
 
 export default async function ComparePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const { a, b, ym } = await searchParams
+  const { region_a, region_b, ym } = await searchParams
 
   const regions = getAllRegions()
   const availableMonths = getAvailableMonths()
   const latestMonth = availableMonths[availableMonths.length - 1]
   const currentMonth = ym && availableMonths.includes(ym) ? ym : latestMonth
 
-  const initialA = a ? (regions.find(r => r.code === a) ?? null) : null
-  const initialB = b ? (regions.find(r => r.code === b) ?? null) : null
+  const initialA = region_a ? (regions.find(r => r.code === region_a) ?? null) : null
+  const initialB = region_b ? (regions.find(r => r.code === region_b) ?? null) : null
   const initialDetailA = initialA ? getRegionDetail(initialA.code, currentMonth) : null
   const initialDetailB = initialB ? getRegionDetail(initialB.code, currentMonth) : null
 
@@ -47,7 +47,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           />
         </Suspense>
 
-        <AdSlot />
+        {initialA && initialB && <AdSlot />}
       </div>
     </MobileShell>
   )
