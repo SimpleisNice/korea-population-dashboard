@@ -9,8 +9,6 @@ const notoSansKr = Noto_Sans_KR({
   display: 'swap',
 })
 
-const adsensePublisherId = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
-
 export const metadata: Metadata = {
   title: {
     template: '%s | 인구통계',
@@ -26,15 +24,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className={notoSansKr.className}>
-      <head>
-        {adsensePublisherId && (
-          <script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsensePublisherId}`}
-            crossOrigin="anonymous"
-          />
-        )}
-      </head>
       <body>
         {children}
         <BottomNav />
