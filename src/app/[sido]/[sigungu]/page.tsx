@@ -7,10 +7,11 @@ import { MobileShell } from "@/components/layout/MobileShell";
 import { Header } from "@/components/layout/Header";
 import { StatCard } from "@/components/region/StatCard";
 import { TrendChart } from "@/components/region/TrendChart";
+import { BookmarkButton } from "@/components/region/BookmarkButton";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { MonthPicker } from "@/components/ui/MonthPicker";
 import { TimePeriodCompare } from "@/components/region/TimePeriodCompare";
-import { getRegionDetail, getRegionBySlug, getAvailableMonths } from "@/lib/data";
+import { getRegionDetail, getRegionBySlug, getAvailableMonths, getRegionRank } from "@/lib/data";
 import { formatNumber } from "@/lib/utils";
 
 interface Params {
@@ -63,10 +64,13 @@ export default async function RegionPage({
   const detail = getRegionDetail(region.code, currentMonth);
   if (!detail) notFound();
 
-  const { latest, prevMonth, trend } = detail;
+  const { latest, prevMonth, yoyMonth, trend } = detail;
   const popChange = prevMonth ? latest.population - prevMonth.population : undefined;
   const hhChange = prevMonth ? latest.households - prevMonth.households : undefined;
+  const yoyPopChange = yoyMonth ? latest.population - yoyMonth.population : undefined;
+  const yoyHhChange = yoyMonth ? latest.households - yoyMonth.households : undefined;
 
+  const rank = getRegionRank(region.code, currentMonth);
   const compareUrl = `/compare?region_a=${region.code}&ym=${currentMonth}`;
 
   return (
@@ -77,14 +81,17 @@ export default async function RegionPage({
         backHref="/"
         showSearch
         right={
-          <Link
-            href={compareUrl}
-            className="flex h-9 w-9 items-center justify-center rounded-full"
-            style={{ color: "var(--color-accent)" }}
-            aria-label="비교하기"
-          >
-            <GitCompare size={20} />
-          </Link>
+          <div className="flex items-center gap-1">
+            <BookmarkButton sido={sidoName} sigungu={sigunguName} />
+            <Link
+              href={compareUrl}
+              className="flex h-9 w-9 items-center justify-center rounded-full"
+              style={{ color: "var(--color-accent)" }}
+              aria-label="비교하기"
+            >
+              <GitCompare size={20} />
+            </Link>
+          </div>
         }
       />
 
@@ -99,15 +106,23 @@ export default async function RegionPage({
         {/* 기준 정보 */}
         <p
           className="text-[13px]"
-          style={{ color: "var(--color-text-secondary)", margin: "0 0 16px" }}
+          style={{ color: "var(--color-text-secondary)", margin: "0 0 4px" }}
         >
           {sidoName} · {formatYM(currentMonth)} 기준
         </p>
+        {rank && (
+          <p
+            className="text-[12px]"
+            style={{ color: "var(--color-text-secondary)", margin: "0 0 16px", opacity: 0.7 }}
+          >
+            {sidoName} 내 {rank.sidoRank}위 · 전국 {rank.nationalRank}위
+          </p>
+        )}
 
         {/* 핵심 지표 */}
         <div className="flex gap-3" style={{ marginBottom: 12 }}>
-          <StatCard label="총 인구" value={latest.population} change={popChange} />
-          <StatCard label="세대수" value={latest.households} change={hhChange} />
+          <StatCard label="총 인구" value={latest.population} change={popChange} yoyChange={yoyPopChange} />
+          <StatCard label="세대수" value={latest.households} change={hhChange} yoyChange={yoyHhChange} />
         </div>
 
         <div className="flex gap-3" style={{ marginBottom: 20 }}>

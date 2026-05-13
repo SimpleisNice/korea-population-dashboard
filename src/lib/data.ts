@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import type { Region, RegionDetail, TrendPoint, AgeGroup, MonthlyStats } from './types'
+import type { Region, RegionDetail, RegionRank, NationalSummary, TrendPoint, AgeGroup, MonthlyStats } from './types'
 
 // ── JSON 파일 경로 ────────────────────────────────────────────────────────────
 
@@ -99,15 +99,99 @@ export function getRegionDetail(code: string, refMonth?: string): RegionDetail |
     }
   })
 
-  const latest = months[recentKeys[recentKeys.length - 1]]
+  const latestKey = recentKeys[recentKeys.length - 1]
+  const latest = months[latestKey]
   const prevMonth = recentKeys.length >= 2
     ? months[recentKeys[recentKeys.length - 2]] ?? null
     : null
+
+  // 전년 동월 (12개월 전)
+  const latestIdx = sortedKeys.indexOf(latestKey)
+  const yoyKey = latestIdx >= 12 ? sortedKeys[latestIdx - 12] : null
+  const yoyMonth: MonthlyStats | null = yoyKey ? months[yoyKey] ?? null : null
 
   // 연령 데이터: 가장 최신 월 사용
   const sortedAgeKeys = Object.keys(ages).sort()
   const latestAgeKey = sortedAgeKeys.at(-1)
   const ageGroups: AgeGroup[] = (latestAgeKey ? ages[latestAgeKey] : undefined) ?? []
 
-  return { region, latest, prevMonth, trend, ageGroups }
+  return { region, latest, prevMonth, yoyMonth, trend, ageGroups }
+}
+
+// ── 전국 순위 ─────────────────────────────────────────────────────────────────
+
+const rankCache = new Map<string, Map<string, RegionRank>>()
+
+function buildRankings(ym: string): Map<string, RegionRank> {
+  if (rankCache.has(ym)) return rankCache.get(ym)!
+
+  const regions = loadIndex()
+  const withPop = regions.map(r => {
+    const json = readRegionJSON(r.code)
+    return { code: r.code, sido: r.sido, population: json?.months[ym]?.population ?? 0 }
+  })
+
+  const sorted = [...withPop].sort((a, b) => b.population - a.population)
+
+  const sidoMap = new Map<string, typeof withPop>()
+  for (const e of withPop) {
+    if (!sidoMap.has(e.sido)) sidoMap.set(e.sido, [])
+    sidoMap.get(e.sido)!.push(e)
+  }
+
+  const sidoSorted = new Map<string, typeof withPop>()
+  sidoMap.forEach((list, sido) => {
+    sidoSorted.set(sido, [...list].sort((a, b) => b.population - a.population))
+  })
+
+  const result = new Map<string, RegionRank>()
+  for (let i = 0; i < sorted.length; i++) {
+    const e = sorted[i]
+    const sidoList = sidoSorted.get(e.sido)!
+    result.set(e.code, {
+      nationalRank: i + 1,
+      nationalTotal: sorted.length,
+      sidoRank: sidoList.findIndex(s => s.code === e.code) + 1,
+      sidoTotal: sidoList.length,
+    })
+  }
+
+  rankCache.set(ym, result)
+  return result
+}
+
+export function getRegionRank(code: string, ym: string): RegionRank | null {
+  return buildRankings(ym).get(code) ?? null
+}
+
+// ── 전국 총괄 현황 ─────────────────────────────────────────────────────────────
+
+let nationalSummaryCache: NationalSummary | null = null
+
+export function getNationalSummary(): NationalSummary | null {
+  if (nationalSummaryCache) return nationalSummaryCache
+
+  const months = getAvailableMonths()
+  if (months.length === 0) return null
+
+  const latestYm = months[months.length - 1]
+  const prevYm = months.length >= 2 ? months[months.length - 2] : null
+
+  const regions = loadIndex()
+  let totalPop = 0
+  let prevTotalPop = 0
+
+  for (const r of regions) {
+    const json = readRegionJSON(r.code)
+    if (!json) continue
+    totalPop += json.months[latestYm]?.population ?? 0
+    if (prevYm) prevTotalPop += json.months[prevYm]?.population ?? 0
+  }
+
+  nationalSummaryCache = {
+    totalPopulation: totalPop,
+    prevMonthChange: prevYm ? totalPop - prevTotalPop : 0,
+    month: latestYm,
+  }
+  return nationalSummaryCache
 }

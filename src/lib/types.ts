@@ -31,8 +31,22 @@ export interface RegionDetail {
   region: Region
   latest: MonthlyStats
   prevMonth: MonthlyStats | null
+  yoyMonth: MonthlyStats | null
   trend: TrendPoint[]
   ageGroups: AgeGroup[]
+}
+
+export interface RegionRank {
+  nationalRank: number
+  nationalTotal: number
+  sidoRank: number
+  sidoTotal: number
+}
+
+export interface NationalSummary {
+  totalPopulation: number
+  prevMonthChange: number
+  month: string
 }
 
 export interface CompareData {

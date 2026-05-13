@@ -3,6 +3,8 @@ import { MobileShell } from "@/components/layout/MobileShell";
 import { RegionSearch } from "@/components/home/RegionSearch";
 import { PopularRegions } from "@/components/home/PopularRegions";
 import { RecentRegions } from "@/components/home/RecentRegions";
+import { NationalSummary } from "@/components/home/NationalSummary";
+import { FavoriteRegions } from "@/components/home/FavoriteRegions";
 import { getAllRegions, getPopularRegions } from "@/lib/data";
 
 export const metadata: Metadata = {
@@ -36,14 +38,22 @@ export default function HomePage() {
         </div>
 
         {/* 검색창 */}
-        <div style={{ marginBottom: 28 }}>
+        <div style={{ marginBottom: 20 }}>
           <RegionSearch regions={regions} />
+        </div>
+
+        {/* 전국 총괄 현황 */}
+        <div style={{ marginBottom: 28 }}>
+          <NationalSummary />
         </div>
 
         {/* 인기 지역 */}
         <div style={{ marginBottom: 28 }}>
           <PopularRegions regions={popularRegions} />
         </div>
+
+        {/* 관심 지역 */}
+        <FavoriteRegions />
 
         {/* 최근 본 지역 */}
         <RecentRegions />

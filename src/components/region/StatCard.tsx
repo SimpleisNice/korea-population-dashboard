@@ -4,13 +4,16 @@ interface Props {
   label: string;
   value: number | string;
   change?: number;
+  yoyChange?: number | null;
   unit?: string;
   small?: boolean;
 }
 
-export function StatCard({ label, value, change, unit, small }: Props) {
+export function StatCard({ label, value, change, yoyChange, unit, small }: Props) {
   const isPositive = change !== undefined && change > 0;
   const isNegative = change !== undefined && change < 0;
+  const isYoyPositive = yoyChange != null && yoyChange > 0;
+  const isYoyNegative = yoyChange != null && yoyChange < 0;
 
   return (
     <div
@@ -61,6 +64,22 @@ export function StatCard({ label, value, change, unit, small }: Props) {
         >
           {isPositive ? "▲" : isNegative ? "▼" : "–"}{" "}
           {Math.abs(change).toLocaleString("ko-KR")} 전월비
+        </p>
+      )}
+      {yoyChange != null && (
+        <p
+          className="text-[12px] font-medium"
+          style={{
+            margin: "3px 0 0",
+            color: isYoyPositive
+              ? "var(--color-positive)"
+              : isYoyNegative
+                ? "var(--color-negative)"
+                : "var(--color-neutral)",
+          }}
+        >
+          {isYoyPositive ? "▲" : isYoyNegative ? "▼" : "–"}{" "}
+          {Math.abs(yoyChange).toLocaleString("ko-KR")} 전년비
         </p>
       )}
     </div>
