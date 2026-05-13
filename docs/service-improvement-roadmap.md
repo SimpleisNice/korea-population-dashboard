@@ -367,18 +367,24 @@
 
 ---
 
-### Phase 2 — Core Improvements 🔄 진행 중
+### Phase 2 — Core Improvements ✅ 완료 (2026-05-13)
 
 > 목표: 서비스의 핵심 차별화 기능 구축. 경쟁 서비스 대비 독보적 데이터 깊이 확보.
 
 | ID | 기능 | 규모 | 상태 |
 |----|------|------|------|
-| N1 | 지역 순위 페이지 `/ranking` | M | ⏳ 대기 |
-| N2 | 인구 급증·급감 탐색 `/trending` | M | ⏳ 대기 |
-| I3 | 추세 차트 기간 선택 (6/12/전체) | M | ⏳ 대기 |
-| I4 | 연령 분포 시간 비교 | M | ⏳ 대기 |
+| N1 | 지역 순위 페이지 `/ranking` | M | ✅ 완료 |
+| N2 | 인구 급증·급감 탐색 `/trending` | M | ✅ 완료 |
+| I3 | 추세 차트 기간 선택 (6/12/전체) | M | ✅ 완료 |
+| I4 | 연령 분포 시간 비교 | M | ✅ 완료 |
 
-**완료 기준:** `/ranking`, `/trending` 페이지 sitemap 등록, SEO 메타데이터 작성
+**구현 내역:**
+- `src/app/ranking/page.tsx` + `src/components/ranking/RankingClient.tsx` — 총인구·전월증감·전년증감률·세대수 정렬, 시도 필터
+- `src/app/trending/page.tsx` + `src/components/trending/TrendingClient.tsx` — 3/6/12개월 기준 급증·급감 TOP 10
+- `src/components/layout/BottomNav.tsx` — 홈·순위·비교 3탭으로 확장
+- `src/components/ui/RangeToggle.tsx` — 기간 세그먼트 토글 컴포넌트
+- `src/components/detail/AgeCompareTab.tsx` + `AgeChart.tsx` — 두 시점 연령 분포 오버레이
+- `src/app/sitemap.ts` — /ranking, /trending 추가
 
 ---
 
