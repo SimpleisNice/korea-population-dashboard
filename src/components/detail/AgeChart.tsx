@@ -2,10 +2,15 @@ import type { AgeGroup } from "@/lib/types";
 
 interface Props {
   data: AgeGroup[];
+  compareData?: AgeGroup[];
 }
 
-export function AgeChart({ data }: Props) {
-  const maxVal = Math.max(...data.flatMap((d) => [d.male, d.female]));
+export function AgeChart({ data, compareData }: Props) {
+  const allVals = [
+    ...data.flatMap((d) => [d.male, d.female]),
+    ...(compareData ?? []).flatMap((d) => [d.male, d.female]),
+  ]
+  const maxVal = Math.max(...allVals);
   const barH = 18;
   const gap = 6;
   const padL = 40;
@@ -35,39 +40,28 @@ export function AgeChart({ data }: Props) {
         </text>
 
         {data.map((d, i) => {
+          const cmp = compareData?.[i]
           const y = 24 + i * (barH * 2 + gap + barGap);
           const availW = W - padL - padR;
           const mW = Math.max(2, (d.male / maxVal) * availW);
           const fW = Math.max(2, (d.female / maxVal) * availW);
+          const cmW = cmp ? Math.max(2, (cmp.male / maxVal) * availW) : 0
+          const cfW = cmp ? Math.max(2, (cmp.female / maxVal) * availW) : 0
           return (
             <g key={d.label}>
-              <text
-                x={padL - 4}
-                y={y + barH - 2}
-                textAnchor="end"
-                fontSize="9"
-                fill="#6B7280"
-              >
+              <text x={padL - 4} y={y + barH - 2} textAnchor="end" fontSize="9" fill="#6B7280">
                 {d.label}
               </text>
-              <rect
-                x={padL}
-                y={y}
-                width={mW}
-                height={barH}
-                rx={3}
-                fill="#2563EB"
-                fillOpacity="0.85"
-              />
-              <rect
-                x={padL}
-                y={y + barH + barGap}
-                width={fW}
-                height={barH}
-                rx={3}
-                fill="#F97316"
-                fillOpacity="0.75"
-              />
+              {/* 비교 시점 막대 (배경) */}
+              {cmp && (
+                <>
+                  <rect x={padL} y={y} width={cmW} height={barH} rx={3} fill="#2563EB" fillOpacity="0.25" />
+                  <rect x={padL} y={y + barH + barGap} width={cfW} height={barH} rx={3} fill="#F97316" fillOpacity="0.22" />
+                </>
+              )}
+              {/* 현재 시점 막대 */}
+              <rect x={padL} y={y} width={mW} height={barH} rx={3} fill="#2563EB" fillOpacity="0.85" />
+              <rect x={padL} y={y + barH + barGap} width={fW} height={barH} rx={3} fill="#F97316" fillOpacity="0.75" />
             </g>
           );
         })}

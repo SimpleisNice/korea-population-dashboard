@@ -10,6 +10,7 @@ import { TrendChart } from "@/components/region/TrendChart";
 import { BookmarkButton } from "@/components/region/BookmarkButton";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { MonthPicker } from "@/components/ui/MonthPicker";
+import { RangeToggle } from "@/components/ui/RangeToggle";
 import { TimePeriodCompare } from "@/components/region/TimePeriodCompare";
 import { getRegionDetail, getRegionBySlug, getAvailableMonths, getRegionRank } from "@/lib/data";
 import { formatNumber } from "@/lib/utils";
@@ -22,6 +23,7 @@ interface Params {
 interface SearchParams {
   ym?: string;
   cmp?: string;
+  range?: string;
 }
 
 function formatYM(ym: string) {
@@ -50,7 +52,10 @@ export default async function RegionPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { sido, sigungu } = await params;
-  const { ym } = await searchParams;
+  const { ym, range } = await searchParams;
+  const rangeMonths = range === 'all' ? 0 : range === '6' ? 6 : 12
+  const currentRange = range === 'all' ? 'all' : range === '6' ? '6' : '12'
+  const rangeLabel = currentRange === 'all' ? '전체 기간' : `최근 ${currentRange}개월`
   const sidoName = decodeURIComponent(sido);
   const sigunguName = decodeURIComponent(sigungu);
 
@@ -61,7 +66,7 @@ export default async function RegionPage({
   const latestMonth = availableMonths[availableMonths.length - 1];
   const currentMonth = ym && availableMonths.includes(ym) ? ym : latestMonth;
 
-  const detail = getRegionDetail(region.code, currentMonth);
+  const detail = getRegionDetail(region.code, currentMonth, rangeMonths);
   if (!detail) notFound();
 
   const { latest, prevMonth, yoyMonth, trend } = detail;
@@ -159,12 +164,14 @@ export default async function RegionPage({
             padding: "20px 20px 16px",
           }}
         >
-          <p
-            className="font-bold"
-            style={{ fontSize: 16, color: "var(--color-text-primary)", margin: "0 0 16px" }}
-          >
-            인구 추이 (최근 12개월)
-          </p>
+          <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+            <p className="font-bold" style={{ fontSize: 15, color: "var(--color-text-primary)" }}>
+              인구 추이 ({rangeLabel})
+            </p>
+            <Suspense>
+              <RangeToggle current={currentRange} />
+            </Suspense>
+          </div>
           <TrendChart data={trend} />
         </div>
 

@@ -9,6 +9,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: now, changeFrequency: 'monthly', priority: 1 },
+    { url: `${siteUrl}/ranking`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${siteUrl}/trending`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${siteUrl}/compare`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
   ]
 

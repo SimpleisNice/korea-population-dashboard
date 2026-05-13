@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import type { Region, RegionDetail, RegionRank, NationalSummary, TrendPoint, AgeGroup, MonthlyStats } from './types'
+import type { Region, RegionDetail, RegionRank, RegionRankEntry, NationalSummary, TrendEntry, TrendPoint, AgeGroup, MonthlyStats } from './types'
 
 // ── JSON 파일 경로 ────────────────────────────────────────────────────────────
 
@@ -69,7 +69,8 @@ export function getMonthStats(code: string, ym: string): MonthlyStats | null {
   return readRegionJSON(code)?.months[ym] ?? null
 }
 
-export function getRegionDetail(code: string, refMonth?: string): RegionDetail | null {
+// range: 개월 수 (0 = 전체 기간, 기본값 12)
+export function getRegionDetail(code: string, refMonth?: string, range = 12): RegionDetail | null {
   const json = readRegionJSON(code)
   if (!json) return null
 
@@ -77,14 +78,13 @@ export function getRegionDetail(code: string, refMonth?: string): RegionDetail |
   const sortedKeys = Object.keys(months).sort()
   if (sortedKeys.length === 0) return null
 
-  // 12개월 윈도우 결정
   const refIdx = refMonth ? sortedKeys.indexOf(refMonth) : -1
   const endIdx = refIdx >= 0 ? refIdx : sortedKeys.length - 1
-  const startIdx = Math.max(0, endIdx - 11)
+  const windowSize = range <= 0 ? endIdx + 1 : Math.min(range, endIdx + 1)
+  const startIdx = endIdx - windowSize + 1
   const recentKeys = sortedKeys.slice(startIdx, endIdx + 1)
   if (recentKeys.length === 0) return null
 
-  // 첫 번째 증감 계산을 위해 이전 월 키 참조
   const preKey = startIdx > 0 ? sortedKeys[startIdx - 1] : null
 
   const trend: TrendPoint[] = recentKeys.map((key, i) => {
@@ -110,12 +110,20 @@ export function getRegionDetail(code: string, refMonth?: string): RegionDetail |
   const yoyKey = latestIdx >= 12 ? sortedKeys[latestIdx - 12] : null
   const yoyMonth: MonthlyStats | null = yoyKey ? months[yoyKey] ?? null : null
 
-  // 연령 데이터: 가장 최신 월 사용
+  // 연령 데이터: latestKey에 가장 가까운 월 사용
   const sortedAgeKeys = Object.keys(ages).sort()
-  const latestAgeKey = sortedAgeKeys.at(-1)
-  const ageGroups: AgeGroup[] = (latestAgeKey ? ages[latestAgeKey] : undefined) ?? []
+  const ageKey = sortedAgeKeys.filter(k => k <= latestKey).at(-1) ?? sortedAgeKeys.at(-1)
+  const ageGroups: AgeGroup[] = (ageKey ? ages[ageKey] : undefined) ?? []
 
   return { region, latest, prevMonth, yoyMonth, trend, ageGroups }
+}
+
+export function getAgeGroups(code: string, ym: string): AgeGroup[] | null {
+  const json = readRegionJSON(code)
+  if (!json) return null
+  const sortedAgeKeys = Object.keys(json.ages).sort()
+  const ageKey = sortedAgeKeys.filter(k => k <= ym).at(-1) ?? sortedAgeKeys.at(-1)
+  return ageKey ? json.ages[ageKey] ?? null : null
 }
 
 // ── 전국 순위 ─────────────────────────────────────────────────────────────────
@@ -162,6 +170,81 @@ function buildRankings(ym: string): Map<string, RegionRank> {
 
 export function getRegionRank(code: string, ym: string): RegionRank | null {
   return buildRankings(ym).get(code) ?? null
+}
+
+export function getAllRegionRankings(ym: string): RegionRankEntry[] {
+  const regions = loadIndex()
+  const months = getAvailableMonths()
+  const ymIdx = months.indexOf(ym)
+  const prevYm = ymIdx > 0 ? months[ymIdx - 1] : null
+  const yoyYm = ymIdx >= 12 ? months[ymIdx - 12] : null
+  const rankings = buildRankings(ym)
+  const entries: RegionRankEntry[] = []
+
+  for (const r of regions) {
+    const json = readRegionJSON(r.code)
+    if (!json) continue
+    const stats = json.months[ym]
+    if (!stats) continue
+    const prevStats = prevYm ? json.months[prevYm] ?? null : null
+    const yoyStats = yoyYm ? json.months[yoyYm] ?? null : null
+    const rank = rankings.get(r.code)
+    if (!rank) continue
+
+    entries.push({
+      region: r,
+      population: stats.population,
+      households: stats.households,
+      householdSize: stats.householdSize,
+      popChange: prevStats ? stats.population - prevStats.population : 0,
+      popChangeYoy: yoyStats ? stats.population - yoyStats.population : 0,
+      popChangeRate: yoyStats && yoyStats.population > 0
+        ? ((stats.population - yoyStats.population) / yoyStats.population) * 100
+        : 0,
+      rank,
+    })
+  }
+
+  return entries
+}
+
+// ── 인구 트렌드 ───────────────────────────────────────────────────────────────
+
+const trendCache = new Map<number, { gainers: TrendEntry[]; losers: TrendEntry[] }>()
+
+export function getPopulationTrends(periodMonths: 3 | 6 | 12): { gainers: TrendEntry[]; losers: TrendEntry[] } {
+  if (trendCache.has(periodMonths)) return trendCache.get(periodMonths)!
+
+  const months = getAvailableMonths()
+  if (months.length <= periodMonths) return { gainers: [], losers: [] }
+
+  const endYm = months[months.length - 1]
+  const startYm = months[months.length - 1 - periodMonths]
+  const regions = loadIndex()
+  const entries: TrendEntry[] = []
+
+  for (const r of regions) {
+    const json = readRegionJSON(r.code)
+    if (!json) continue
+    const endStats = json.months[endYm]
+    const startStats = json.months[startYm]
+    if (!endStats || !startStats) continue
+
+    const change = endStats.population - startStats.population
+    const changeRate = startStats.population > 0
+      ? (change / startStats.population) * 100
+      : 0
+    entries.push({ region: r, startPop: startStats.population, endPop: endStats.population, change, changeRate })
+  }
+
+  entries.sort((a, b) => b.change - a.change)
+
+  const result = {
+    gainers: entries.slice(0, 10),
+    losers: entries.slice(-10).reverse(),
+  }
+  trendCache.set(periodMonths, result)
+  return result
 }
 
 // ── 전국 총괄 현황 ─────────────────────────────────────────────────────────────

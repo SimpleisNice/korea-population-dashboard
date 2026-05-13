@@ -73,7 +73,12 @@ export default async function DetailPage({
           {sidoName} · {formatYM(currentMonth)} 기준
         </p>
 
-        <DetailTabs detail={detail} />
+        <DetailTabs
+          detail={detail}
+          regionCode={region.code}
+          currentMonth={currentMonth}
+          availableMonths={availableMonths}
+        />
 
         <div style={{ marginTop: 20 }}>
           <AdSlot />

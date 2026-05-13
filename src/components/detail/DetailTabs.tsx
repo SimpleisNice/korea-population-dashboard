@@ -2,7 +2,7 @@
 
 import * as Tabs from "@radix-ui/react-tabs";
 import { TrendChart } from "@/components/region/TrendChart";
-import { AgeChart } from "./AgeChart";
+import { AgeCompareTab } from "./AgeCompareTab";
 import { ChangeChart } from "./ChangeChart";
 import { StatCard } from "@/components/region/StatCard";
 import type { RegionDetail } from "@/lib/types";
@@ -16,9 +16,12 @@ const TABS = [
 
 interface Props {
   detail: RegionDetail;
+  regionCode: string;
+  currentMonth: string;
+  availableMonths: string[];
 }
 
-export function DetailTabs({ detail }: Props) {
+export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }: Props) {
   const { latest, prevMonth, trend, ageGroups } = detail;
 
   return (
@@ -157,13 +160,12 @@ export function DetailTabs({ detail }: Props) {
             boxShadow: "var(--shadow-card)",
           }}
         >
-          <p
-            className="mb-3 text-sm font-semibold"
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            연령별 인구 구조
-          </p>
-          <AgeChart data={ageGroups} />
+          <AgeCompareTab
+            regionCode={regionCode}
+            currentAgeGroups={ageGroups}
+            currentMonth={currentMonth}
+            availableMonths={availableMonths}
+          />
         </div>
       </Tabs.Content>
 

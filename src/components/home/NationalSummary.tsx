@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { TrendingUp } from 'lucide-react'
 import { getNationalSummary } from '@/lib/data'
 import { formatNumber } from '@/lib/utils'
 
@@ -55,6 +57,31 @@ export function NationalSummary() {
             {Math.abs(summary.prevMonthChange).toLocaleString('ko-KR')} 전월비
           </p>
         )}
+      </div>
+      <div className="flex items-center gap-2" style={{ marginTop: 12 }}>
+        <Link
+          href="/trending"
+          className="flex items-center gap-1 rounded-full text-[12px] font-semibold"
+          style={{
+            backgroundColor: 'var(--color-accent-light)',
+            color: 'var(--color-accent)',
+            padding: '5px 12px',
+          }}
+        >
+          <TrendingUp size={12} />
+          급증·급감 지역
+        </Link>
+        <Link
+          href="/ranking"
+          className="rounded-full text-[12px] font-semibold"
+          style={{
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-secondary)',
+            padding: '5px 12px',
+          }}
+        >
+          지역 순위
+        </Link>
       </div>
     </div>
   )

@@ -49,6 +49,25 @@ export interface NationalSummary {
   month: string
 }
 
+export interface RegionRankEntry {
+  region: Region
+  population: number
+  households: number
+  householdSize: number
+  popChange: number
+  popChangeYoy: number
+  popChangeRate: number
+  rank: RegionRank
+}
+
+export interface TrendEntry {
+  region: Region
+  startPop: number
+  endPop: number
+  change: number
+  changeRate: number
+}
+
 export interface CompareData {
   a: RegionDetail
   b: RegionDetail

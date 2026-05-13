@@ -12,6 +12,16 @@ function HomeIcon({ color }: { color: string }) {
   )
 }
 
+function RankingIcon({ color }: { color: string }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  )
+}
+
 function CompareIcon({ color }: { color: string }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -25,10 +35,12 @@ function CompareIcon({ color }: { color: string }) {
 
 export function BottomNav() {
   const pathname = usePathname()
+  const isRanking = pathname.startsWith('/ranking') || pathname.startsWith('/trending')
   const isCompare = pathname.startsWith('/compare')
+  const isHome = !isRanking && !isCompare
 
-  const homeColor = isCompare ? 'var(--color-text-secondary)' : 'var(--color-accent)'
-  const compareColor = isCompare ? 'var(--color-accent)' : 'var(--color-text-secondary)'
+  const ac = 'var(--color-accent)'
+  const sc = 'var(--color-text-secondary)'
 
   return (
     <nav
@@ -48,33 +60,17 @@ export function BottomNav() {
         zIndex: 50,
       }}
     >
-      <Link
-        href="/"
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 3,
-          textDecoration: 'none',
-        }}
-      >
-        <HomeIcon color={homeColor} />
-        <span style={{ fontSize: 11, fontWeight: 500, color: homeColor }}>홈</span>
+      <Link href="/" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none' }}>
+        <HomeIcon color={isHome ? ac : sc} />
+        <span style={{ fontSize: 11, fontWeight: 500, color: isHome ? ac : sc }}>홈</span>
       </Link>
-      <Link
-        href="/compare"
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 3,
-          textDecoration: 'none',
-        }}
-      >
-        <CompareIcon color={compareColor} />
-        <span style={{ fontSize: 11, fontWeight: 500, color: compareColor }}>비교</span>
+      <Link href="/ranking" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none' }}>
+        <RankingIcon color={isRanking ? ac : sc} />
+        <span style={{ fontSize: 11, fontWeight: 500, color: isRanking ? ac : sc }}>순위</span>
+      </Link>
+      <Link href="/compare" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none' }}>
+        <CompareIcon color={isCompare ? ac : sc} />
+        <span style={{ fontSize: 11, fontWeight: 500, color: isCompare ? ac : sc }}>비교</span>
       </Link>
     </nav>
   )
