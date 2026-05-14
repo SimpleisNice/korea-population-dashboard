@@ -34,10 +34,12 @@ function Metric({
   label,
   a,
   b,
+  tooltip,
 }: {
   label: string;
   a: number | string;
   b: number | string;
+  tooltip?: string;
 }) {
   return (
     <div
@@ -50,14 +52,37 @@ function Metric({
       <span
         className="text-center text-xs"
         style={{ color: "var(--color-text-secondary)" }}
+        title={tooltip}
       >
         {label}
+        {tooltip && (
+          <span style={{ marginLeft: 2, opacity: 0.5, cursor: "help" }}>ⓘ</span>
+        )}
       </span>
       <span className="text-center font-semibold" style={{ color: COLOR_B }}>
         {typeof b === "number" ? formatNumber(b) : b}
       </span>
     </div>
   );
+}
+
+function calcSexRatio(male: number, female: number): string {
+  if (female === 0) return "—";
+  return (male / female * 100).toFixed(1);
+}
+
+function calcYoyRate(latest: number, yoy: number | undefined): string {
+  if (!yoy || yoy === 0) return "—";
+  return ((latest - yoy) / yoy * 100).toFixed(2) + "%";
+}
+
+function calcElderlyRate(ageGroups: import("@/lib/types").AgeGroup[], total: number): string {
+  if (total === 0 || ageGroups.length === 0) return "—";
+  const elderlyLabels = ["60–69", "70–79", "80+"];
+  const elderly = ageGroups
+    .filter(g => elderlyLabels.includes(g.label))
+    .reduce((s, g) => s + g.male + g.female, 0);
+  return (elderly / total * 100).toFixed(1) + "%";
 }
 
 export function CompareClient({
@@ -140,7 +165,7 @@ export function CompareClient({
       </div>
 
       {/* 비교 결과 */}
-      {detailA && detailB ? (
+      {regionA && regionB && detailA && detailB ? (
         <>
           <div className="grid grid-cols-3 text-center text-xs font-semibold py-2">
             <span style={{ color: COLOR_A }}>{regionA!.sigungu}</span>
@@ -179,6 +204,24 @@ export function CompareClient({
               label="여자 인구"
               a={detailA.latest.female}
               b={detailB.latest.female}
+            />
+            <Metric
+              label="성비"
+              a={calcSexRatio(detailA.latest.male, detailA.latest.female)}
+              b={calcSexRatio(detailB.latest.male, detailB.latest.female)}
+              tooltip="남자 ÷ 여자 × 100. 100 = 균형, 100 초과 = 남자 多"
+            />
+            <Metric
+              label="전년 동월 증감률"
+              a={calcYoyRate(detailA.latest.population, detailA.yoyMonth?.population)}
+              b={calcYoyRate(detailB.latest.population, detailB.yoyMonth?.population)}
+              tooltip="(현재 인구 − 1년 전 동월 인구) ÷ 1년 전 동월 인구 × 100"
+            />
+            <Metric
+              label="고령 인구 비율"
+              a={calcElderlyRate(detailA.ageGroups, detailA.latest.population)}
+              b={calcElderlyRate(detailB.ageGroups, detailB.latest.population)}
+              tooltip="60세 이상 인구 ÷ 총인구 × 100 (10세 단위 연령 데이터 기준)"
             />
           </div>
 
