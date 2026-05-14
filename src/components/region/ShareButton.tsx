@@ -3,19 +3,17 @@
 import { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden'
-import { Share2, Link2, ImageIcon, FileDown, Check, X } from 'lucide-react'
+import { Share2, Link2, ImageIcon, Check, X } from 'lucide-react'
 
 interface Props {
-  regionCode: string
   sigunguName: string
   captureId?: string
 }
 
-export function ShareButton({ regionCode, sigunguName, captureId = 'region-content' }: Props) {
+export function ShareButton({ sigunguName, captureId = 'region-content' }: Props) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [capturing, setCapturing] = useState(false)
-  const [downloading, setDownloading] = useState(false)
 
   async function copyUrl() {
     await navigator.clipboard.writeText(window.location.href)
@@ -39,36 +37,6 @@ export function ShareButton({ regionCode, sigunguName, captureId = 'region-conte
       setOpen(false)
     } finally {
       setCapturing(false)
-    }
-  }
-
-  async function downloadCsv() {
-    if (downloading) return
-    setDownloading(true)
-    try {
-      const res = await fetch(`/data/regions/${regionCode}.json`)
-      const json = await res.json() as {
-        months: Record<string, {
-          population: number; households: number; householdSize: number; male: number; female: number
-        }>
-      }
-      const header = '기준년월,총인구,세대수,세대당인구,남자,여자'
-      const rows = Object.entries(json.months)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([ym, s]) =>
-          `${ym.slice(0, 4)}-${ym.slice(4)},${s.population},${s.households},${s.householdSize},${s.male},${s.female}`
-        )
-      const csv = [header, ...rows].join('\n')
-      const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${sigunguName}_인구통계.csv`
-      a.click()
-      URL.revokeObjectURL(url)
-      setOpen(false)
-    } finally {
-      setDownloading(false)
     }
   }
 
@@ -138,13 +106,6 @@ export function ShareButton({ regionCode, sigunguName, captureId = 'region-conte
               description="현재 화면을 PNG로 저장"
               onClick={saveImage}
               loading={capturing}
-            />
-            <ActionRow
-              icon={<FileDown size={18} />}
-              label={downloading ? '준비 중...' : 'CSV 다운로드'}
-              description={`${sigunguName} 전체 월별 데이터`}
-              onClick={downloadCsv}
-              loading={downloading}
             />
           </div>
         </Dialog.Content>

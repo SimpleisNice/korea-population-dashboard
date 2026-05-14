@@ -88,7 +88,7 @@ export default async function RegionPage({
         showSearch
         right={
           <div className="flex items-center gap-1">
-            <ShareButton regionCode={region.code} sigunguName={sigunguName} />
+            <ShareButton sigunguName={sigunguName} />
             <BookmarkButton sido={sidoName} sigungu={sigunguName} />
             <Link
               href={compareUrl}
