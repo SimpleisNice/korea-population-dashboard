@@ -9,12 +9,17 @@ interface Props {
 export function PopularRegions({ regions }: Props) {
   return (
     <section>
-      <p
-        className="mb-3 text-[13px] font-medium"
-        style={{ color: "var(--color-text-secondary)" }}
-      >
-        인기 지역
-      </p>
+      <div className="mb-3 flex items-baseline gap-2">
+        <p
+          className="text-[13px] font-medium"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          인구 급증 지역
+        </p>
+        <span className="text-[11px]" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>
+          최근 12개월 증가율 TOP 6 · 시도별 1곳
+        </span>
+      </div>
       <div className="flex flex-wrap gap-2.5">
         {regions.map((region) => (
           <Link

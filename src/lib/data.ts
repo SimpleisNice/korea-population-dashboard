@@ -32,25 +32,51 @@ function loadIndex(): Region[] {
   return indexCache
 }
 
-// ── 상수 ─────────────────────────────────────────────────────────────────────
-
-const POPULAR_CODES = [
-  '1168000000', // 강남구
-  '1171000000', // 송파구
-  '4113500000', // 성남시 분당구
-  '1144000000', // 마포구
-  '2635000000', // 해운대구
-  '4159000000', // 화성시
-]
-
 // ── public API ────────────────────────────────────────────────────────────────
 
 export function getAllRegions(): Region[] {
   return loadIndex()
 }
 
+let popularCache: string[] | null = null
+
 export function getPopularRegions(): string[] {
-  return POPULAR_CODES
+  if (popularCache) return popularCache
+
+  const months = getAvailableMonths()
+  if (months.length < 13) {
+    popularCache = ['1168000000', '1171000000', '4113500000', '1144000000', '2635000000', '4159000000']
+    return popularCache
+  }
+
+  const endYm = months[months.length - 1]
+  const startYm = months[months.length - 13]
+  const regions = loadIndex()
+
+  const ranked = regions
+    .map(r => {
+      const json = readRegionJSON(r.code)
+      if (!json) return null
+      const end = json.months[endYm]
+      const start = json.months[startYm]
+      if (!end || !start || start.population === 0) return null
+      const rate = (end.population - start.population) / start.population
+      return { code: r.code, sido: r.sido, rate }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => b.rate - a.rate)
+
+  const result: string[] = []
+  const sidoSeen = new Set<string>()
+  for (const entry of ranked) {
+    if (sidoSeen.has(entry.sido)) continue
+    result.push(entry.code)
+    sidoSeen.add(entry.sido)
+    if (result.length === 6) break
+  }
+
+  popularCache = result
+  return result
 }
 
 export function getRegionBySlug(sido: string, sigungu: string): Region | null {
