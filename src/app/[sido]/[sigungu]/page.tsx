@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/Header";
 import { StatCard } from "@/components/region/StatCard";
 import { TrendChart } from "@/components/region/TrendChart";
 import { BookmarkButton } from "@/components/region/BookmarkButton";
+import { ShareButton } from "@/components/region/ShareButton";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { MonthPicker } from "@/components/ui/MonthPicker";
 import { RangeToggle } from "@/components/ui/RangeToggle";
@@ -87,6 +88,7 @@ export default async function RegionPage({
         showSearch
         right={
           <div className="flex items-center gap-1">
+            <ShareButton regionCode={region.code} sigunguName={sigunguName} />
             <BookmarkButton sido={sidoName} sigungu={sigunguName} />
             <Link
               href={compareUrl}
@@ -100,7 +102,7 @@ export default async function RegionPage({
         }
       />
 
-      <div style={{ padding: "0 16px 32px" }}>
+      <div id="region-content" style={{ padding: "0 16px 32px" }}>
         {/* 기준월 선택 */}
         <div style={{ margin: "16px 0" }}>
           <Suspense>
