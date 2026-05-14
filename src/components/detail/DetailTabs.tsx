@@ -3,6 +3,7 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import { TrendChart } from "@/components/region/TrendChart";
 import { AgeCompareTab } from "./AgeCompareTab";
+import { AgeInsightCards } from "./AgeInsightCards";
 import { ChangeChart } from "./ChangeChart";
 import { StatCard } from "@/components/region/StatCard";
 import type { RegionDetail } from "@/lib/types";
@@ -153,6 +154,7 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
       </Tabs.Content>
 
       <Tabs.Content value="age">
+        <AgeInsightCards ageGroups={ageGroups} latest={latest} />
         <div
           className="rounded-xl p-4"
           style={{
