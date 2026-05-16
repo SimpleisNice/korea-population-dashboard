@@ -273,6 +273,91 @@ export function getPopulationTrends(periodMonths: 3 | 6 | 12): { gainers: TrendE
   return result
 }
 
+// ── 홈 탭용: 급감/고령화 지역 (시도별 1개, TOP 6) ────────────────────────────
+
+let decliningCache: string[] | null = null
+
+export function getDecliningRegions(): string[] {
+  if (decliningCache) return decliningCache
+
+  const months = getAvailableMonths()
+  if (months.length < 13) return []
+
+  const endYm = months[months.length - 1]
+  const startYm = months[months.length - 13]
+  const regions = loadIndex()
+
+  const ranked = regions
+    .map(r => {
+      const json = readRegionJSON(r.code)
+      if (!json) return null
+      const end = json.months[endYm]
+      const start = json.months[startYm]
+      if (!end || !start || start.population === 0) return null
+      const rate = (end.population - start.population) / start.population
+      return { code: r.code, sido: r.sido, rate }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => a.rate - b.rate) // 감소율 낮은 순 (가장 많이 감소한 순)
+
+  const result: string[] = []
+  const sidoSeen = new Set<string>()
+  for (const entry of ranked) {
+    if (sidoSeen.has(entry.sido)) continue
+    result.push(entry.code)
+    sidoSeen.add(entry.sido)
+    if (result.length === 6) break
+  }
+
+  decliningCache = result
+  return result
+}
+
+let agingCache: string[] | null = null
+
+export function getAgingRegions(): string[] {
+  if (agingCache) return agingCache
+
+  const months = getAvailableMonths()
+  if (months.length === 0) return []
+  const latestYm = months[months.length - 1]
+  const regions = loadIndex()
+
+  const ELDERLY = ['60–69', '70–79', '80+']
+  const YOUTH = ['0–9', '10–19']
+
+  const ranked = regions
+    .map(r => {
+      const json = readRegionJSON(r.code)
+      if (!json) return null
+      const sortedAgeKeys = Object.keys(json.ages).sort()
+      const ageKey = sortedAgeKeys.filter(k => k <= latestYm).at(-1) ?? sortedAgeKeys.at(-1)
+      if (!ageKey) return null
+      const groups = json.ages[ageKey]
+      if (!groups) return null
+
+      const elderly = groups.filter(g => ELDERLY.includes(g.label)).reduce((s, g) => s + g.male + g.female, 0)
+      const youth = groups.filter(g => YOUTH.includes(g.label)).reduce((s, g) => s + g.male + g.female, 0)
+      if (youth === 0) return null
+      const index = elderly / youth * 100
+      return { code: r.code, sido: r.sido, index }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => b.index - a.index)
+
+  const result: string[] = []
+  const sidoSeen = new Set<string>()
+  for (const entry of ranked) {
+    if (sidoSeen.has(entry.sido)) continue
+    result.push(entry.code)
+    sidoSeen.add(entry.sido)
+    if (result.length === 6) break
+  }
+
+  agingCache = result
+  return result
+}
+
 // ── 전국 총괄 현황 ─────────────────────────────────────────────────────────────
 
 let nationalSummaryCache: NationalSummary | null = null

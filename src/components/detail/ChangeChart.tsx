@@ -30,6 +30,7 @@ export function ChangeChart({ data }: Props) {
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
+            tickFormatter={(v: string) => v.slice(2)}
           />
           <YAxis
             tick={{ fontSize: 9, fill: 'var(--color-text-secondary)' }}

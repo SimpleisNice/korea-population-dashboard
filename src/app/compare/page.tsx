@@ -47,7 +47,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           />
         </Suspense>
 
-        {initialA && initialB && <AdSlot />}
+        {(initialA || initialB) && <AdSlot />}
       </div>
     </MobileShell>
   )

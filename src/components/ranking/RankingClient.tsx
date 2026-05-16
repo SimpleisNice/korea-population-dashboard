@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ChevronRight, TrendingUp } from 'lucide-react'
 import { regionPath } from '@/lib/utils'
 import type { RegionRankEntry } from '@/lib/types'
 
 type SortKey = 'population' | 'popChange' | 'popChangeRate' | 'households'
+const VALID_SORTS: SortKey[] = ['population', 'popChange', 'popChangeRate', 'households']
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'population', label: '총 인구' },
@@ -19,15 +21,32 @@ interface Props {
   entries: RegionRankEntry[]
   sidos: string[]
   ym: string
+  initialSort?: string
+  initialSido?: string
 }
 
 function formatYM(ym: string) {
   return `${ym.slice(0, 4)}년 ${parseInt(ym.slice(4))}월`
 }
 
-export function RankingClient({ entries, sidos, ym }: Props) {
-  const [sortKey, setSortKey] = useState<SortKey>('population')
-  const [sidoFilter, setSidoFilter] = useState('전체')
+export function RankingClient({ entries, sidos, ym, initialSort, initialSido }: Props) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const sortKey: SortKey = (initialSort && VALID_SORTS.includes(initialSort as SortKey))
+    ? initialSort as SortKey
+    : 'population'
+  const sidoFilter = (initialSido && (initialSido === '전체' || sidos.includes(initialSido)))
+    ? initialSido
+    : '전체'
+
+  const setParam = useCallback((key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (value === '전체' || value === 'population') params.delete(key)
+    else params.set(key, value)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [router, pathname, searchParams])
 
   const sorted = useMemo(() => {
     const filtered = sidoFilter === '전체' ? entries : entries.filter(e => e.region.sido === sidoFilter)
@@ -59,7 +78,7 @@ export function RankingClient({ entries, sidos, ym }: Props) {
       <div className="flex items-center gap-2" style={{ marginBottom: 16 }}>
         <select
           value={sortKey}
-          onChange={e => setSortKey(e.target.value as SortKey)}
+          onChange={e => setParam('sort', e.target.value)}
           className="flex-1 rounded-lg text-[13px] font-semibold bg-transparent appearance-none cursor-pointer"
           style={{
             border: '1px solid var(--color-border)',
@@ -72,7 +91,7 @@ export function RankingClient({ entries, sidos, ym }: Props) {
         </select>
         <select
           value={sidoFilter}
-          onChange={e => setSidoFilter(e.target.value)}
+          onChange={e => setParam('sido', e.target.value)}
           className="rounded-lg text-[13px] font-semibold bg-transparent appearance-none cursor-pointer"
           style={{
             border: '1px solid var(--color-border)',

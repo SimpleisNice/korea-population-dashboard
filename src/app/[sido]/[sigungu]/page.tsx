@@ -14,7 +14,7 @@ import { MonthPicker } from "@/components/ui/MonthPicker";
 import { RangeToggle } from "@/components/ui/RangeToggle";
 import { TimePeriodCompare } from "@/components/region/TimePeriodCompare";
 import { getRegionDetail, getRegionBySlug, getAvailableMonths, getRegionRank } from "@/lib/data";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, buildForecast } from "@/lib/utils";
 
 interface Params {
   sido: string;
@@ -31,6 +31,8 @@ function formatYM(ym: string) {
   return `${ym.slice(0, 4)}년 ${parseInt(ym.slice(4))}월`;
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://korea-population-dashboard.vercel.app'
+
 export async function generateMetadata({
   params,
 }: {
@@ -39,9 +41,42 @@ export async function generateMetadata({
   const { sido, sigungu } = await params;
   const sidoName = decodeURIComponent(sido);
   const sigunguName = decodeURIComponent(sigungu);
+
+  const region = getRegionBySlug(sidoName, sigunguName);
+  const detail = region ? getRegionDetail(region.code) : null;
+  const pop = detail?.latest.population;
+  const change = detail && detail.prevMonth ? detail.latest.population - detail.prevMonth.population : undefined;
+
+  const description = pop
+    ? `${sidoName} ${sigunguName} 인구 ${pop.toLocaleString('ko-KR')}명${change !== undefined ? (change >= 0 ? ` (전월 대비 +${change.toLocaleString('ko-KR')}명)` : ` (전월 대비 ${change.toLocaleString('ko-KR')}명)`) : ''}. 인구 추이·세대수·연령 구조·전입출 현황을 확인하세요.`
+    : `${sidoName} ${sigunguName} 인구 현황. 총인구, 세대수, 인구 추이를 확인하세요.`;
+
+  const ogImageParams = new URLSearchParams({ name: sigunguName, sido: sidoName });
+  if (pop) ogImageParams.set('pop', String(pop));
+  if (change !== undefined) ogImageParams.set('change', String(change));
+  const ogImageUrl = `${SITE_URL}/api/og?${ogImageParams.toString()}`;
+  const pageUrl = `${SITE_URL}/${encodeURIComponent(sidoName)}/${encodeURIComponent(sigunguName)}`;
+
   return {
-    title: `${sigunguName} 인구통계`,
-    description: `${sidoName} ${sigunguName} 인구 현황. 총인구, 세대수, 인구 추이를 확인하세요.`,
+    title: `${sigunguName} 인구통계${pop ? ` — ${pop.toLocaleString('ko-KR')}명` : ''}`,
+    description,
+    keywords: [sigunguName, sidoName, '인구통계', '인구 추이', '세대수', '연령 구조', '부동산', `${sigunguName} 인구`],
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title: `${sigunguName} 인구통계`,
+      description,
+      url: pageUrl,
+      siteName: '인구통계',
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `${sigunguName} 인구통계` }],
+      locale: 'ko_KR',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${sigunguName} 인구통계`,
+      description,
+      images: [ogImageUrl],
+    },
   };
 }
 
@@ -53,7 +88,7 @@ export default async function RegionPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { sido, sigungu } = await params;
-  const { ym, range } = await searchParams;
+  const { ym, cmp, range } = await searchParams;
   const rangeMonths = range === 'all' ? 0 : range === '6' ? 6 : 12
   const currentRange = range === 'all' ? 'all' : range === '6' ? '6' : '12'
   const rangeLabel = currentRange === 'all' ? '전체 기간' : `최근 ${currentRange}개월`
@@ -77,7 +112,10 @@ export default async function RegionPage({
   const yoyHhChange = yoyMonth ? latest.households - yoyMonth.households : undefined;
 
   const rank = getRegionRank(region.code, currentMonth);
-  const compareUrl = `/compare?region_a=${region.code}&ym=${currentMonth}`;
+  const forecast = buildForecast(trend, 6);
+  const compareUrl = cmp
+    ? `/compare?region_a=${cmp}&region_b=${region.code}&ym=${currentMonth}`
+    : `/compare?region_a=${region.code}&ym=${currentMonth}`;
 
   return (
     <MobileShell>
@@ -156,6 +194,17 @@ export default async function RegionPage({
           </div>
         </div>
 
+        {/* 지역 인사이트 요약 */}
+        <RegionInsight
+          sigunguName={sigunguName}
+          sidoName={sidoName}
+          ym={currentMonth}
+          population={latest.population}
+          popChange={popChange}
+          yoyPopChange={yoyPopChange}
+          rank={rank}
+        />
+
         {/* 인구 추이 차트 */}
         <div
           className="rounded-xl"
@@ -174,7 +223,7 @@ export default async function RegionPage({
               <RangeToggle current={currentRange} />
             </Suspense>
           </div>
-          <TrendChart data={trend} />
+          <TrendChart data={trend} forecast={forecast} />
         </div>
 
         {/* 시점 비교 */}
@@ -206,5 +255,72 @@ export default async function RegionPage({
         <AdSlot />
       </div>
     </MobileShell>
+  );
+}
+
+function RegionInsight({
+  sigunguName,
+  sidoName,
+  ym,
+  population,
+  popChange,
+  yoyPopChange,
+  rank,
+}: {
+  sigunguName: string;
+  sidoName: string;
+  ym: string;
+  population: number;
+  popChange: number | undefined;
+  yoyPopChange: number | undefined;
+  rank: { nationalRank: number; nationalTotal: number; sidoRank: number; sidoTotal: number } | null;
+}) {
+  const ymLabel = `${ym.slice(0, 4)}년 ${parseInt(ym.slice(4))}월`;
+  const popStr = population.toLocaleString("ko-KR");
+
+  const trendDesc = (() => {
+    if (yoyPopChange == null) return null;
+    const rate = ((yoyPopChange / (population - yoyPopChange)) * 100).toFixed(2);
+    const dir = yoyPopChange > 0 ? "증가" : yoyPopChange < 0 ? "감소" : "유지";
+    const sign = yoyPopChange > 0 ? "+" : "";
+    return `전년 동월 대비 ${sign}${yoyPopChange.toLocaleString("ko-KR")}명(${sign}${rate}%) ${dir}하여 ${yoyPopChange > 0 ? "인구 유입" : yoyPopChange < 0 ? "인구 유출" : "현상 유지"} 지역입니다.`;
+  })();
+
+  const momDesc = (() => {
+    if (popChange == null) return null;
+    const sign = popChange > 0 ? "+" : "";
+    return `전월 대비 ${sign}${popChange.toLocaleString("ko-KR")}명`;
+  })();
+
+  const rankDesc = rank
+    ? `${sidoName} 내 ${rank.sidoRank}위(${rank.sidoTotal}개 시군구 중), 전국 ${rank.nationalRank}위(${rank.nationalTotal}개 시군구 중)입니다.`
+    : null;
+
+  const sentences = [
+    `${sigunguName}(${sidoName})는 ${ymLabel} 기준 총인구 ${popStr}명${momDesc ? `(${momDesc})` : ""}입니다.`,
+    trendDesc,
+    rankDesc,
+  ].filter(Boolean) as string[];
+
+  return (
+    <div
+      className="rounded-xl"
+      style={{
+        backgroundColor: "var(--color-surface)",
+        borderTop: "3px solid var(--color-accent)",
+        marginBottom: 20,
+        padding: "16px 20px",
+      }}
+    >
+      <p
+        className="text-[12px] font-semibold"
+        style={{ color: "var(--color-accent)", marginBottom: 8, letterSpacing: "0.05em" }}
+      >
+        통계 요약
+      </p>
+      <p className="text-[13px] leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
+        {sentences.join(" ")}
+      </p>
+    </div>
   );
 }

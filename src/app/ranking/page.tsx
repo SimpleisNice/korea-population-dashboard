@@ -10,7 +10,10 @@ export const metadata: Metadata = {
   description: '전국 시군구 인구 순위. 총인구, 전월 증감, 전년 증감률 기준으로 정렬하고 시도별로 필터링하세요.',
 }
 
-export default function RankingPage() {
+interface SearchParams { sort?: string; sido?: string }
+
+export default async function RankingPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const { sort, sido } = await searchParams
   const availableMonths = getAvailableMonths()
   const latestYm = availableMonths[availableMonths.length - 1]
   const entries = getAllRegionRankings(latestYm)
@@ -22,7 +25,7 @@ export default function RankingPage() {
       <div style={{ padding: '0 16px 32px' }}>
         <div style={{ marginTop: 20 }}>
           <RankingHeader ym={latestYm} />
-          <RankingClient entries={entries} sidos={sidos} ym={latestYm} />
+          <RankingClient entries={entries} sidos={sidos} ym={latestYm} initialSort={sort} initialSido={sido} />
           <div style={{ marginTop: 20 }}>
             <AdSlot />
           </div>

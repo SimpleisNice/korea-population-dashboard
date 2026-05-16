@@ -5,18 +5,23 @@ import { PopularRegions } from "@/components/home/PopularRegions";
 import { RecentRegions } from "@/components/home/RecentRegions";
 import { NationalSummary } from "@/components/home/NationalSummary";
 import { FavoriteRegions } from "@/components/home/FavoriteRegions";
-import { getAllRegions, getPopularRegions } from "@/lib/data";
+import { getAllRegions, getPopularRegions, getDecliningRegions, getAgingRegions } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "부동산 인구통계 — 시군구 인구 현황",
 };
 
-export default function HomePage() {
-  const regions = getAllRegions();
-  const popularCodes = getPopularRegions();
-  const popularRegions = popularCodes
+function codeToRegions(codes: string[], regions: ReturnType<typeof getAllRegions>) {
+  return codes
     .map((code) => regions.find((r) => r.code === code))
     .filter((r): r is NonNullable<typeof r> => r != null);
+}
+
+export default function HomePage() {
+  const regions = getAllRegions();
+  const growthRegions  = codeToRegions(getPopularRegions(),  regions);
+  const declineRegions = codeToRegions(getDecliningRegions(), regions);
+  const agingRegions   = codeToRegions(getAgingRegions(),    regions);
 
   return (
     <MobileShell>
@@ -49,7 +54,11 @@ export default function HomePage() {
 
         {/* 인기 지역 */}
         <div style={{ marginBottom: 28 }}>
-          <PopularRegions regions={popularRegions} />
+          <PopularRegions
+            growthRegions={growthRegions}
+            declineRegions={declineRegions}
+            agingRegions={agingRegions}
+          />
         </div>
 
         {/* 관심 지역 */}

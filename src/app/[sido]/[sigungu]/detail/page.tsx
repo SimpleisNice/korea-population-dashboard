@@ -46,7 +46,7 @@ export default async function DetailPage({
   const latestMonth = availableMonths[availableMonths.length - 1]
   const currentMonth = ym && availableMonths.includes(ym) ? ym : latestMonth
 
-  const detail = getRegionDetail(region.code, currentMonth)
+  const detail = getRegionDetail(region.code, currentMonth, 0)
   if (!detail) notFound()
 
   return (

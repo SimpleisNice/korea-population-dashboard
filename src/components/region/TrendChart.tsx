@@ -1,20 +1,36 @@
 'use client'
 
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 import type { TrendPoint } from '@/lib/types'
+import type { ForecastPoint } from '@/lib/utils'
 import { formatNumber } from '@/lib/utils'
+
+interface ChartPoint {
+  label: string
+  population?: number
+  forecast?: number
+}
 
 interface Props {
   data: TrendPoint[]
+  forecast?: ForecastPoint[]
   color?: string
   height?: number
 }
 
-export function TrendChart({ data, color = 'var(--color-accent)', height = 180 }: Props) {
+export function TrendChart({ data, forecast, color = 'var(--color-accent)', height = 180 }: Props) {
+  const combined: ChartPoint[] = [
+    ...data.map(p => ({ label: p.label, population: p.population })),
+    ...(forecast ?? []).map(p => ({ label: p.label, forecast: p.forecast })),
+  ]
+
+  // 실제↔예측 경계 label (첫 번째 예측 포인트 앞)
+  const boundaryLabel = forecast && forecast.length > 0 ? forecast[0].label : null
+
   return (
     <div style={{ height, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <LineChart data={combined} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
           <XAxis
             dataKey="label"
@@ -22,6 +38,7 @@ export function TrendChart({ data, color = 'var(--color-accent)', height = 180 }
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
+            tickFormatter={(v: string) => v.slice(2)}
           />
           <YAxis
             tick={{ fontSize: 9, fill: 'var(--color-text-secondary)' }}
@@ -38,9 +55,21 @@ export function TrendChart({ data, color = 'var(--color-accent)', height = 180 }
               padding: '6px 10px',
               backgroundColor: 'var(--color-bg)',
             }}
-            formatter={(value) => value != null ? [formatNumber(value as number) + '명', '인구'] : ['', '인구']}
+            formatter={(value, name) => {
+              if (value == null) return ['', '']
+              const label = name === 'forecast' ? '예측(참고용)' : '인구'
+              return [formatNumber(value as number) + '명', label]
+            }}
             labelStyle={{ color: 'var(--color-text-secondary)', marginBottom: 2 }}
           />
+          {boundaryLabel && (
+            <ReferenceLine
+              x={boundaryLabel}
+              stroke="var(--color-border)"
+              strokeDasharray="4 2"
+              label={{ value: '예측', position: 'insideTopRight', fontSize: 9, fill: 'var(--color-text-secondary)' }}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="population"
@@ -48,7 +77,21 @@ export function TrendChart({ data, color = 'var(--color-accent)', height = 180 }
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4, fill: color }}
+            connectNulls={false}
           />
+          {forecast && forecast.length > 0 && (
+            <Line
+              type="monotone"
+              dataKey="forecast"
+              stroke={color}
+              strokeWidth={2}
+              strokeDasharray="5 3"
+              strokeOpacity={0.5}
+              dot={false}
+              activeDot={{ r: 4, fill: color, fillOpacity: 0.5 }}
+              connectNulls={false}
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>
