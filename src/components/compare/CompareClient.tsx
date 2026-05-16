@@ -12,8 +12,9 @@ import {
   CartesianGrid,
 } from "recharts";
 import { CompareSearch } from "./CompareSearch";
+import { AgeChart } from "@/components/detail/AgeChart";
 import { MonthPicker } from "@/components/ui/MonthPicker";
-import type { Region, RegionDetail } from "@/lib/types";
+import type { Region, RegionDetail, AgeGroup } from "@/lib/types";
 import { fetchRegionDetail } from "@/lib/actions";
 import { formatNumber } from "@/lib/utils";
 
@@ -76,7 +77,16 @@ function calcYoyRate(latest: number, yoy: number | undefined): string {
   return ((latest - yoy) / yoy * 100).toFixed(2) + "%";
 }
 
-function calcElderlyRate(ageGroups: import("@/lib/types").AgeGroup[], total: number): string {
+function calcAgingIndex(groups: AgeGroup[]): number | null {
+  const ELDERLY = ["60–69", "70–79", "80+"];
+  const YOUTH = ["0–9", "10–19"];
+  const elderly = groups.filter(g => ELDERLY.includes(g.label)).reduce((s, g) => s + g.male + g.female, 0);
+  const youth = groups.filter(g => YOUTH.includes(g.label)).reduce((s, g) => s + g.male + g.female, 0);
+  if (youth === 0) return null;
+  return Math.round(elderly / youth * 100);
+}
+
+function calcElderlyRate(ageGroups: AgeGroup[], total: number): string {
   if (total === 0 || ageGroups.length === 0) return "—";
   const elderlyLabels = ["60–69", "70–79", "80+"];
   const elderly = ageGroups
@@ -336,6 +346,72 @@ export function CompareClient({
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* 연령 구조 비교 */}
+          {detailA.ageGroups.length > 0 && detailB.ageGroups.length > 0 && (() => {
+            const idxA = calcAgingIndex(detailA.ageGroups);
+            const idxB = calcAgingIndex(detailB.ageGroups);
+            const diff = idxA !== null && idxB !== null ? idxA - idxB : null;
+            return (
+              <div
+                className="rounded-xl p-4"
+                style={{ backgroundColor: "var(--color-bg)", boxShadow: "var(--shadow-card)" }}
+              >
+                {/* 헤더 */}
+                <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
+                    연령 구조 비교
+                  </p>
+                  <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--color-text-secondary)" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: "#2563EB", display: "inline-block" }} />
+                      {regionA!.sigungu}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: "#2563EB", opacity: 0.3, display: "inline-block" }} />
+                      {regionB!.sigungu}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 고령화 지수 */}
+                {idxA !== null && idxB !== null && (
+                  <div
+                    className="flex items-center gap-3 rounded-lg"
+                    style={{ backgroundColor: "var(--color-surface)", padding: "10px 14px", marginBottom: 12 }}
+                  >
+                    <div className="text-center flex-1">
+                      <p className="text-[10px]" style={{ color: "var(--color-text-secondary)", marginBottom: 2 }}>
+                        {regionA!.sigungu} 고령화 지수
+                      </p>
+                      <p className="text-[15px] font-bold" style={{ color: COLOR_A }}>{idxA}</p>
+                    </div>
+                    <div className="text-center">
+                      <p
+                        className="text-[13px] font-bold"
+                        style={{
+                          color: (diff ?? 0) > 0 ? "var(--color-negative)"
+                            : (diff ?? 0) < 0 ? "var(--color-positive)"
+                            : "var(--color-text-secondary)",
+                        }}
+                      >
+                        {(diff ?? 0) > 0 ? `+${diff}` : diff}
+                      </p>
+                      <p className="text-[10px]" style={{ color: "var(--color-text-secondary)" }}>차이</p>
+                    </div>
+                    <div className="text-center flex-1">
+                      <p className="text-[10px]" style={{ color: "var(--color-text-secondary)", marginBottom: 2 }}>
+                        {regionB!.sigungu} 고령화 지수
+                      </p>
+                      <p className="text-[15px] font-bold" style={{ color: COLOR_B }}>{idxB}</p>
+                    </div>
+                  </div>
+                )}
+
+                <AgeChart data={detailA.ageGroups} compareData={detailB.ageGroups} />
+              </div>
+            );
+          })()}
         </>
       ) : (
         <div
