@@ -1,6 +1,6 @@
 # 서비스 기능 명세
 
-> 최종 업데이트: 2026-05-14  
+> 최종 업데이트: 2026-05-23  
 > 대상: 현재 배포 코드 기준 (main 브랜치)
 
 ---
@@ -45,7 +45,7 @@
 | 로고·서브타이틀 | 서비스명 + 한 줄 소개 |
 | 지역 검색창 | 시군구 이름 퍼지 검색 (Fuse.js). 결과 클릭 시 지역 상세 이동 |
 | 전국 총괄 현황 | 전국 총인구, 전월 대비 증감, 기준 연월 표시 |
-| 인구 급증 지역 | 최근 12개월 인구 증가율 TOP 6 (시도별 1개 제한, 서버 빌드 시 캐싱) |
+| 인기 지역 탭 | 급증·급감·고령화 3탭 전환. 각 탭 TOP 6 (시도별 1개). 칩에 증감률 뱃지 (▲/▼ %) 표시. 탭 전환 시 200ms fade |
 | 관심 지역 | localStorage 저장 즐겨찾기 목록. 북마크 추가 시 표시 (최대 10개) |
 | 최근 본 지역 | localStorage 기반 방문 이력 (최근 순) |
 
@@ -97,10 +97,11 @@
 
 | 탭 | 내용 |
 |----|------|
-| 인구추이 | 월별 라인 차트 + 최근 6개월 수치 테이블 |
+| 인구추이 | 월별 라인 차트 + 향후 6개월 예측 점선 오버레이 + 최근 6개월 수치 테이블 |
 | 세대 | 세대수·세대당인구 카드 + 세대수 추이 차트 |
 | 연령 | **심층 지표 카드 4개** (고령화 지수·생산가능 비율·성비·중위 연령대) + 두 시점 연령 분포 오버레이 차트 |
-| 증감 | 월별 인구 증감 막대 차트 |
+| 증감 | 월별 인구 증감 막대 차트 + 기간 요약 카드 |
+| 전입출 | 순이동 인사이트 카드 + 월별 순이동 막대 + 누적 순이동 area 차트 (주민등록 기준 근사값) |
 
 **연령 탭 심층 지표 계산 기준 (10세 단위 버킷):**
 
@@ -116,7 +117,7 @@
 - 드롭다운으로 비교 시점 변경 가능
 - 현재 시점 막대(진한색) + 비교 시점 막대(반투명) 오버레이
 
-**관련 컴포넌트:** `DetailTabs`, `TrendChart`, `ChangeChart`, `AgeChart`, `AgeCompareTab`, `AgeInsightCards`, `MonthPicker`
+**관련 컴포넌트:** `DetailTabs`, `TrendChart`, `ChangeChart`, `MigrationTab`, `AgeChart`, `AgeCompareTab`, `AgeInsightCards`, `MonthPicker`
 
 ---
 
@@ -163,7 +164,12 @@
 
 **목적:** 전국 시군구를 원하는 지표 기준으로 순위 조회.
 
-**URL 파라미터:** 없음 (정렬·필터는 클라이언트 상태)
+**URL 파라미터:**
+
+| 파라미터 | 타입 | 기본값 | 설명 |
+|---------|------|--------|------|
+| `sort` | `population \| popChange \| popChangeRate \| households` | `population` | 정렬 기준 |
+| `sido` | 시도명 (한국어) | — | 시도 필터 |
 
 **기능:**
 
@@ -255,7 +261,9 @@
 | `getRegionBySlug(sido, sigungu)` | `Region \| null` | URL slug로 지역 조회 |
 | `getRegionRank(code, ym)` | `RegionRank \| null` | 시도 내 순위 + 전국 순위 |
 | `getAllRegionRankings(ym)` | `RegionRankEntry[]` | 전체 지역 순위 데이터 |
-| `getPopularRegions()` | `string[]` | 12개월 증가율 TOP 6 코드 (시도별 1개 제한, 캐싱) |
+| `getPopularRegions()` | `{ code, rate }[]` | 12개월 증가율 TOP 6 + 증감률 (시도별 1개 제한, 캐싱) |
+| `getDecliningRegions()` | `{ code, rate }[]` | 12개월 감소율 TOP 6 + 감소율 (시도별 1개 제한, 캐싱) |
+| `getAgingRegions()` | `{ code, rate }[]` | 고령화 지수 TOP 6 + 지수값 (시도별 1개 제한, 캐싱) |
 | `getPopulationTrends(period)` | `{gainers, losers}` | 급증·급감 TOP 10 (3/6/12개월) |
 | `getNationalSummary()` | `NationalSummary` | 전국 총인구 + 전월 증감 |
 | `getAgeGroups(code, ym)` | `AgeGroup[] \| null` | 연령별 분포 (10세 단위) |
@@ -285,26 +293,16 @@ NationalSummary { totalPopulation, prevMonthChange, month }
 
 ## 5. 미구현 백로그
 
-### B1. 비교 페이지 진입 시 현재 지역 자동 셋팅
+~~B1. 비교 페이지 진입 시 현재 지역 자동 셋팅~~ → ✅ 완료  
+~~B2. 비교 페이지 광고 노출 조건 완화~~ → ✅ 완료
 
-**현재 동작**  
-지역 요약 페이지의 비교 버튼 클릭 시 `region_a`만 셋팅된 채 이동.
+### E-1. 지도 기반 탐색
 
-**개선 방향**  
-이미 비교 페이지에 `region_a`가 있는 상태에서 다른 지역의 비교 버튼을 클릭하면 `region_b`에 자동으로 채워지도록 처리.
+**목적**  
+시도별 인구 현황을 SVG/GeoJSON 히트맵으로 시각화하여 탐색성 강화.
 
-**영향 범위**
-- `src/app/[sido]/[sigungu]/page.tsx` — `compareUrl` 생성 로직 수정
-
----
-
-### B2. 비교 페이지 광고 노출 조건 완화
-
-**현재 동작**  
-`region_a && region_b` 두 지역 모두 선택 시에만 광고 노출.
-
-**개선 방향**  
-`region_a || region_b` — 한 지역만 선택된 상태에서도 광고 노출.
-
-**영향 범위**
-- `src/app/compare/page.tsx` — AdSlot 렌더링 조건 수정
+**구현 방향**  
+- `react-simple-maps` + 한국 시도 GeoJSON
+- 인구 밀도 또는 증감률 기준 컬러 스케일
+- 시도 클릭 → 해당 시도 시군구 목록 or 지역 요약 이동
+- 예정 위치: 홈 페이지 또는 별도 `/map` 라우트
