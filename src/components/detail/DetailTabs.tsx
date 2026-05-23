@@ -6,6 +6,7 @@ import { TrendChart } from "@/components/region/TrendChart";
 import { AgeCompareTab } from "./AgeCompareTab";
 import { AgeInsightCards } from "./AgeInsightCards";
 import { ChangeChart } from "./ChangeChart";
+import { MigrationTab } from "./MigrationTab";
 import { StatCard } from "@/components/region/StatCard";
 import type { RegionDetail, TrendPoint, MonthlyStats } from "@/lib/types";
 import { buildForecast } from "@/lib/utils";
@@ -22,6 +23,7 @@ const TABS = [
   { id: "household", label: "세대" },
   { id: "age", label: "연령" },
   { id: "change", label: "증감" },
+  { id: "migration", label: "전입출" },
 ];
 
 interface Props {
@@ -150,6 +152,11 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
           </div>
           <ChangeChart data={visibleTrend} />
         </div>
+      </Tabs.Content>
+
+      {/* 전입출 탭 */}
+      <Tabs.Content value="migration">
+        <MigrationTab trend={visibleTrend} />
       </Tabs.Content>
     </Tabs.Root>
   );
