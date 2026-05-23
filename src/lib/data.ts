@@ -358,6 +358,48 @@ export function getAgingRegions(): { code: string; rate: number }[] {
   return result
 }
 
+// ── 시도별 집계 통계 (지도 히트맵용) ───────────────────────────────────────────
+
+export interface SidoStat {
+  sido: string
+  population: number
+  changeRate: number
+}
+
+let sidoStatsCache: SidoStat[] | null = null
+
+export function getSidoStats(): SidoStat[] {
+  if (sidoStatsCache) return sidoStatsCache
+
+  const months = getAvailableMonths()
+  const regions = loadIndex()
+  if (months.length === 0) return []
+
+  const endYm = months[months.length - 1]
+  const startYm = months.length >= 13 ? months[months.length - 13] : months[0]
+
+  const sidoMap = new Map<string, { pop: number; prevPop: number }>()
+
+  for (const r of regions) {
+    const json = readRegionJSON(r.code)
+    if (!json) continue
+    const end = json.months[endYm]
+    const start = json.months[startYm]
+    if (!end) continue
+    const acc = sidoMap.get(r.sido) ?? { pop: 0, prevPop: 0 }
+    acc.pop += end.population
+    if (start) acc.prevPop += start.population
+    sidoMap.set(r.sido, acc)
+  }
+
+  sidoStatsCache = Array.from(sidoMap.entries()).map(([sido, { pop, prevPop }]) => ({
+    sido,
+    population: pop,
+    changeRate: prevPop > 0 ? (pop - prevPop) / prevPop : 0,
+  }))
+  return sidoStatsCache
+}
+
 // ── 전국 총괄 현황 ─────────────────────────────────────────────────────────────
 
 let nationalSummaryCache: NationalSummary | null = null
