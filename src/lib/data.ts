@@ -38,14 +38,14 @@ export function getAllRegions(): Region[] {
   return loadIndex()
 }
 
-let popularCache: string[] | null = null
+let popularCache: { code: string; rate: number }[] | null = null
 
-export function getPopularRegions(): string[] {
+export function getPopularRegions(): { code: string; rate: number }[] {
   if (popularCache) return popularCache
 
   const months = getAvailableMonths()
   if (months.length < 13) {
-    popularCache = ['1168000000', '1171000000', '4113500000', '1144000000', '2635000000', '4159000000']
+    popularCache = ['1168000000', '1171000000', '4113500000', '1144000000', '2635000000', '4159000000'].map(code => ({ code, rate: 0 }))
     return popularCache
   }
 
@@ -66,11 +66,11 @@ export function getPopularRegions(): string[] {
     .filter((x): x is NonNullable<typeof x> => x !== null)
     .sort((a, b) => b.rate - a.rate)
 
-  const result: string[] = []
+  const result: { code: string; rate: number }[] = []
   const sidoSeen = new Set<string>()
   for (const entry of ranked) {
     if (sidoSeen.has(entry.sido)) continue
-    result.push(entry.code)
+    result.push({ code: entry.code, rate: entry.rate })
     sidoSeen.add(entry.sido)
     if (result.length === 6) break
   }
@@ -275,9 +275,9 @@ export function getPopulationTrends(periodMonths: 3 | 6 | 12): { gainers: TrendE
 
 // ── 홈 탭용: 급감/고령화 지역 (시도별 1개, TOP 6) ────────────────────────────
 
-let decliningCache: string[] | null = null
+let decliningCache: { code: string; rate: number }[] | null = null
 
-export function getDecliningRegions(): string[] {
+export function getDecliningRegions(): { code: string; rate: number }[] {
   if (decliningCache) return decliningCache
 
   const months = getAvailableMonths()
@@ -298,13 +298,13 @@ export function getDecliningRegions(): string[] {
       return { code: r.code, sido: r.sido, rate }
     })
     .filter((x): x is NonNullable<typeof x> => x !== null)
-    .sort((a, b) => a.rate - b.rate) // 감소율 낮은 순 (가장 많이 감소한 순)
+    .sort((a, b) => a.rate - b.rate)
 
-  const result: string[] = []
+  const result: { code: string; rate: number }[] = []
   const sidoSeen = new Set<string>()
   for (const entry of ranked) {
     if (sidoSeen.has(entry.sido)) continue
-    result.push(entry.code)
+    result.push({ code: entry.code, rate: entry.rate })
     sidoSeen.add(entry.sido)
     if (result.length === 6) break
   }
@@ -313,9 +313,9 @@ export function getDecliningRegions(): string[] {
   return result
 }
 
-let agingCache: string[] | null = null
+let agingCache: { code: string; rate: number }[] | null = null
 
-export function getAgingRegions(): string[] {
+export function getAgingRegions(): { code: string; rate: number }[] {
   if (agingCache) return agingCache
 
   const months = getAvailableMonths()
@@ -345,11 +345,11 @@ export function getAgingRegions(): string[] {
     .filter((x): x is NonNullable<typeof x> => x !== null)
     .sort((a, b) => b.index - a.index)
 
-  const result: string[] = []
+  const result: { code: string; rate: number }[] = []
   const sidoSeen = new Set<string>()
   for (const entry of ranked) {
     if (sidoSeen.has(entry.sido)) continue
-    result.push(entry.code)
+    result.push({ code: entry.code, rate: entry.index })
     sidoSeen.add(entry.sido)
     if (result.length === 6) break
   }

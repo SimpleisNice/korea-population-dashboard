@@ -11,17 +11,20 @@ export const metadata: Metadata = {
   title: "부동산 인구통계 — 시군구 인구 현황",
 };
 
-function codeToRegions(codes: string[], regions: ReturnType<typeof getAllRegions>) {
-  return codes
-    .map((code) => regions.find((r) => r.code === code))
+function codeToRegions(entries: { code: string; rate: number }[], regions: ReturnType<typeof getAllRegions>) {
+  return entries
+    .map(({ code, rate }) => {
+      const region = regions.find((r) => r.code === code);
+      return region ? { region, rate } : null;
+    })
     .filter((r): r is NonNullable<typeof r> => r != null);
 }
 
 export default function HomePage() {
   const regions = getAllRegions();
-  const growthRegions  = codeToRegions(getPopularRegions(),  regions);
+  const growthRegions  = codeToRegions(getPopularRegions(),   regions);
   const declineRegions = codeToRegions(getDecliningRegions(), regions);
-  const agingRegions   = codeToRegions(getAgingRegions(),    regions);
+  const agingRegions   = codeToRegions(getAgingRegions(),     regions);
 
   return (
     <MobileShell>

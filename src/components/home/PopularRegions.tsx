@@ -13,16 +13,34 @@ const TABS: { key: Tab; label: string; subtitle: string }[] = [
   { key: "aging",   label: "고령화", subtitle: "고령화 지수 최고 지역 TOP" },
 ];
 
+interface RegionWithRate {
+  region: Region;
+  rate: number;
+}
+
 interface Props {
-  growthRegions:  Region[];
-  declineRegions: Region[];
-  agingRegions:   Region[];
+  growthRegions:  RegionWithRate[];
+  declineRegions: RegionWithRate[];
+  agingRegions:   RegionWithRate[];
+}
+
+function formatBadge(tab: Tab, rate: number): { text: string; color: string } {
+  if (tab === "aging") {
+    return {
+      text: `${Math.round(rate)}`,
+      color: "var(--color-neutral)",
+    };
+  }
+  const pct = (Math.abs(rate) * 100).toFixed(1);
+  if (tab === "growth") return { text: `▲ ${pct}%`, color: "var(--color-positive)" };
+  return { text: `▼ ${pct}%`, color: "var(--color-negative)" };
 }
 
 export function PopularRegions({ growthRegions, declineRegions, agingRegions }: Props) {
   const [tab, setTab] = useState<Tab>("growth");
+  const [visible, setVisible] = useState(true);
 
-  const regionMap: Record<Tab, Region[]> = {
+  const regionMap: Record<Tab, RegionWithRate[]> = {
     growth:  growthRegions,
     decline: declineRegions,
     aging:   agingRegions,
@@ -30,6 +48,15 @@ export function PopularRegions({ growthRegions, declineRegions, agingRegions }: 
 
   const current = TABS.find(t => t.key === tab)!;
   const regions = regionMap[tab];
+
+  function switchTab(next: Tab) {
+    if (next === tab) return;
+    setVisible(false);
+    setTimeout(() => {
+      setTab(next);
+      setVisible(true);
+    }, 200);
+  }
 
   return (
     <section>
@@ -39,7 +66,7 @@ export function PopularRegions({ growthRegions, declineRegions, agingRegions }: 
           {TABS.map(t => (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => switchTab(t.key)}
               className="rounded-full text-[13px] font-semibold transition-colors"
               style={{
                 padding: "5px 14px",
@@ -63,26 +90,41 @@ export function PopularRegions({ growthRegions, declineRegions, agingRegions }: 
       </div>
 
       {/* 지역 칩 */}
-      <div className="flex flex-wrap gap-2.5">
-        {regions.map((region) => (
-          <Link
-            key={region.code}
-            href={regionPath(region.sido, region.sigungu)}
-            className="rounded-full border text-sm font-semibold transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
-            style={{
-              borderColor: "var(--color-border)",
-              color: "var(--color-text-primary)",
-              backgroundColor: "var(--color-bg)",
-              height: 40,
-              padding: "0 18px",
-              display: "inline-flex",
-              alignItems: "center",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {region.sigungu}
-          </Link>
-        ))}
+      <div
+        className="flex flex-wrap gap-2.5"
+        style={{ opacity: visible ? 1 : 0, transition: "opacity 200ms ease" }}
+      >
+        {regions.map(({ region, rate }) => {
+          const badge = formatBadge(tab, rate);
+          return (
+            <Link
+              key={region.code}
+              href={regionPath(region.sido, region.sigungu)}
+              className="rounded-full border text-sm font-semibold transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+              style={{
+                borderColor: "var(--color-border)",
+                color: "var(--color-text-primary)",
+                backgroundColor: "var(--color-bg)",
+                height: 40,
+                padding: "0 14px 0 18px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {region.sigungu}
+              {rate !== 0 && (
+                <span
+                  className="text-[12px] font-semibold"
+                  style={{ color: badge.color }}
+                >
+                  {badge.text}
+                </span>
+              )}
+            </Link>
+          );
+        })}
         {regions.length === 0 && (
           <p className="text-[13px]" style={{ color: "var(--color-text-secondary)" }}>
             데이터를 불러오는 중입니다.
