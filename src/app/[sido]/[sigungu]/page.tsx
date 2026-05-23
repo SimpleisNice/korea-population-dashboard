@@ -108,8 +108,10 @@ export default async function RegionPage({
   const { latest, prevMonth, yoyMonth, trend } = detail;
   const popChange = prevMonth ? latest.population - prevMonth.population : undefined;
   const hhChange = prevMonth ? latest.households - prevMonth.households : undefined;
+  const hhSizeChange = prevMonth ? parseFloat((latest.householdSize - prevMonth.householdSize).toFixed(2)) : undefined;
   const yoyPopChange = yoyMonth ? latest.population - yoyMonth.population : undefined;
   const yoyHhChange = yoyMonth ? latest.households - yoyMonth.households : undefined;
+  const yoyHhSizeChange = yoyMonth ? parseFloat((latest.householdSize - yoyMonth.householdSize).toFixed(2)) : undefined;
 
   const rank = getRegionRank(region.code, currentMonth);
   const forecast = buildForecast(trend, 6);
@@ -171,7 +173,7 @@ export default async function RegionPage({
         </div>
 
         <div className="flex gap-3" style={{ marginBottom: 20 }}>
-          <StatCard label="세대당 인구" value={latest.householdSize} unit="명" small />
+          <StatCard label="세대당 인구" value={latest.householdSize} unit="명" small change={hhSizeChange} yoyChange={yoyHhSizeChange} />
           <div
             className="flex-1 rounded-xl"
             style={{

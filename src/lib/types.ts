@@ -19,6 +19,7 @@ export interface TrendPoint {
   population: number
   households: number
   change: number
+  householdsChange: number
 }
 
 export interface AgeGroup {

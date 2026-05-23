@@ -16,9 +16,11 @@ interface Props {
   forecast?: ForecastPoint[]
   color?: string
   height?: number
+  label?: string
+  unit?: string
 }
 
-export function TrendChart({ data, forecast, color = 'var(--color-accent)', height = 180 }: Props) {
+export function TrendChart({ data, forecast, color = 'var(--color-accent)', height = 180, label = '인구', unit = '명' }: Props) {
   const combined: ChartPoint[] = [
     ...data.map(p => ({ label: p.label, population: p.population })),
     ...(forecast ?? []).map(p => ({ label: p.label, forecast: p.forecast })),
@@ -57,8 +59,8 @@ export function TrendChart({ data, forecast, color = 'var(--color-accent)', heig
             }}
             formatter={(value, name) => {
               if (value == null) return ['', '']
-              const label = name === 'forecast' ? '예측(참고용)' : '인구'
-              return [formatNumber(value as number) + '명', label]
+              const tooltipLabel = name === 'forecast' ? '예측(참고용)' : label
+              return [formatNumber(value as number) + unit, tooltipLabel]
             }}
             labelStyle={{ color: 'var(--color-text-secondary)', marginBottom: 2 }}
           />

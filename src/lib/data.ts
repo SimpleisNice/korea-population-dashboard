@@ -122,6 +122,7 @@ export function getRegionDetail(code: string, refMonth?: string, range = 12): Re
       population: stats.population,
       households: stats.households,
       change: prevStats ? stats.population - prevStats.population : 0,
+      householdsChange: prevStats ? stats.households - prevStats.households : 0,
     }
   })
 

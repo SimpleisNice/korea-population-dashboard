@@ -97,7 +97,12 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
               value={latest.households}
               change={prevMonth ? latest.households - prevMonth.households : undefined}
             />
-            <StatCard label="세대당 인구" value={latest.householdSize} unit="명" />
+            <StatCard
+              label="세대당 인구"
+              value={latest.householdSize}
+              unit="명"
+              change={prevMonth ? parseFloat((latest.householdSize - prevMonth.householdSize).toFixed(2)) : undefined}
+            />
           </div>
 
           <HouseholdInsight trend={visibleTrend} latest={latest} />
@@ -115,6 +120,8 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
             <TrendChart
               data={visibleTrend.map((t) => ({ ...t, population: t.households }))}
               color="var(--color-positive)"
+              label="세대"
+              unit="세대"
               height={160}
             />
           </div>
