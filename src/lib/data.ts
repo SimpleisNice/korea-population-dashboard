@@ -32,6 +32,11 @@ function loadIndex(): Region[] {
   return indexCache
 }
 
+// 지역 JSON에서 targetYm 이하의 가장 최근 월을 반환 (데이터 불연속 대응)
+function latestAvailable(regionMonths: string[], upTo: string): string | null {
+  return regionMonths.filter(m => m <= upTo).at(-1) ?? null
+}
+
 // ── public API ────────────────────────────────────────────────────────────────
 
 export function getAllRegions(): Region[] {
@@ -163,7 +168,10 @@ function buildRankings(ym: string): Map<string, RegionRank> {
   const regions = loadIndex()
   const withPop = regions.map(r => {
     const json = readRegionJSON(r.code)
-    return { code: r.code, sido: r.sido, population: json?.months[ym]?.population ?? 0 }
+    if (!json) return { code: r.code, sido: r.sido, population: 0 }
+    const regionMonths = Object.keys(json.months).sort()
+    const availYm = latestAvailable(regionMonths, ym)
+    return { code: r.code, sido: r.sido, population: availYm ? (json.months[availYm]?.population ?? 0) : 0 }
   })
 
   const sorted = [...withPop].sort((a, b) => b.population - a.population)
@@ -211,10 +219,15 @@ export function getAllRegionRankings(ym: string): RegionRankEntry[] {
   for (const r of regions) {
     const json = readRegionJSON(r.code)
     if (!json) continue
-    const stats = json.months[ym]
+    const regionMonths = Object.keys(json.months).sort()
+    const regionYm = latestAvailable(regionMonths, ym)
+    if (!regionYm) continue
+    const stats = json.months[regionYm]
     if (!stats) continue
-    const prevStats = prevYm ? json.months[prevYm] ?? null : null
-    const yoyStats = yoyYm ? json.months[yoyYm] ?? null : null
+    const prevRegionYm = prevYm ? latestAvailable(regionMonths, prevYm) : null
+    const yoyRegionYm = yoyYm ? latestAvailable(regionMonths, yoyYm) : null
+    const prevStats = prevRegionYm ? json.months[prevRegionYm] ?? null : null
+    const yoyStats = yoyRegionYm ? json.months[yoyRegionYm] ?? null : null
     const rank = rankings.get(r.code)
     if (!rank) continue
 
@@ -384,9 +397,13 @@ export function getSidoStats(): SidoStat[] {
   for (const r of regions) {
     const json = readRegionJSON(r.code)
     if (!json) continue
-    const end = json.months[endYm]
-    const start = json.months[startYm]
+    const regionMonths = Object.keys(json.months).sort()
+    const regionEndYm = latestAvailable(regionMonths, endYm)
+    if (!regionEndYm) continue
+    const end = json.months[regionEndYm]
     if (!end) continue
+    const regionStartYm = latestAvailable(regionMonths, startYm)
+    const start = regionStartYm ? json.months[regionStartYm] : null
     const acc = sidoMap.get(r.sido) ?? { pop: 0, prevPop: 0 }
     acc.pop += end.population
     if (start) acc.prevPop += start.population
