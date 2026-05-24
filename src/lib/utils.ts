@@ -34,7 +34,7 @@ function nextYM(ym: string): string {
   return next
 }
 
-function ymToLabel(ym: string): string {
+export function formatYM(ym: string): string {
   return `${ym.slice(0, 4)}.${ym.slice(4)}`
 }
 
@@ -65,7 +65,7 @@ export function buildForecast(trend: TrendPoint[], futurePeriods = 6): ForecastP
   for (let i = 1; i <= futurePeriods; i++) {
     currentYM = nextYM(currentYM)
     points.push({
-      label: ymToLabel(currentYM),
+      label: formatYM(currentYM),
       forecast: Math.round(intercept + slope * (n - 1 + i)),
     })
   }

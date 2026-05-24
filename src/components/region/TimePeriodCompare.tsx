@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { GitCompare, X } from 'lucide-react'
 import { fetchMonthStats } from '@/lib/actions'
-import { formatNumber } from '@/lib/utils'
+import { formatNumber, formatYM } from '@/lib/utils'
 import type { MonthlyStats } from '@/lib/types'
 
 interface Props {
@@ -14,18 +14,16 @@ interface Props {
   currentStats: MonthlyStats
 }
 
-function formatYM(ym: string) {
-  return `${ym.slice(0, 4)}.${ym.slice(4)}`
-}
-
 function DiffBadge({ a, b }: { a: number; b: number }) {
   const diff = a - b
-  const pct = b !== 0 ? ((diff / b) * 100).toFixed(1) : '–'
-  const color =
-    diff > 0 ? 'var(--color-positive)' : diff < 0 ? 'var(--color-negative)' : 'var(--color-neutral)'
+  if (diff === 0) {
+    return <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-neutral)' }}>–</span>
+  }
+  const pct = b !== 0 ? ((diff / b) * 100).toFixed(1) : null
+  const color = diff > 0 ? 'var(--color-positive)' : 'var(--color-negative)'
   return (
     <span style={{ fontSize: 11, color, fontWeight: 600 }}>
-      {diff > 0 ? '▲' : diff < 0 ? '▼' : ''} {Math.abs(diff).toLocaleString('ko-KR')} ({pct}%)
+      {diff > 0 ? '▲' : '▼'} {Math.abs(diff).toLocaleString('ko-KR')}{pct != null ? ` (${pct}%)` : ''}
     </span>
   )
 }
@@ -60,17 +58,23 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
   const cmp = searchParams.get('cmp') ?? ''
   const [cmpStats, setCmpStats] = useState<MonthlyStats | null>(null)
   const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState(false)
 
   useEffect(() => {
-    if (!cmp || !availableMonths.includes(cmp)) {
-      startTransition(() => setCmpStats(null))
+    const valid = cmp && availableMonths.includes(cmp) && cmp !== currentMonth
+    if (!valid) {
+      startTransition(() => { setCmpStats(null); setFetchError(false) })
       return
     }
-    startTransition(() => setLoading(true))
-    fetchMonthStats(regionCode, cmp).then(s => {
-      startTransition(() => { setCmpStats(s); setLoading(false) })
-    })
-  }, [cmp, regionCode, availableMonths])
+    startTransition(() => { setLoading(true); setFetchError(false) })
+    fetchMonthStats(regionCode, cmp)
+      .then(s => {
+        startTransition(() => { setCmpStats(s); setLoading(false) })
+      })
+      .catch(() => {
+        startTransition(() => { setFetchError(true); setLoading(false) })
+      })
+  }, [cmp, regionCode, availableMonths, currentMonth])
 
   const setCmp = useCallback(
     (ym: string) => {
@@ -82,12 +86,12 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
     [router, pathname, searchParams],
   )
 
-  // When no cmp selected: show select button
   if (!cmp) {
     return (
       <button
         onClick={() => {
-          const defaultCmp = availableMonths.find(m => m !== currentMonth) ?? ''
+          const idx = availableMonths.indexOf(currentMonth)
+          const defaultCmp = availableMonths[idx - 1] ?? availableMonths.find(m => m !== currentMonth) ?? ''
           setCmp(defaultCmp)
         }}
         className="flex w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold"
@@ -159,14 +163,23 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
 
       {/* 비교 지표 */}
       <div className="px-4">
-        {loading || !cmpStats ? (
+        {loading ? (
           <p className="py-6 text-center text-[13px]" style={{ color: 'var(--color-text-secondary)' }}>
-            {loading ? '불러오는 중…' : '데이터 없음'}
+            불러오는 중…
+          </p>
+        ) : fetchError ? (
+          <p className="py-6 text-center text-[13px]" style={{ color: 'var(--color-negative)' }}>
+            데이터를 불러오지 못했습니다
+          </p>
+        ) : !cmpStats ? (
+          <p className="py-6 text-center text-[13px]" style={{ color: 'var(--color-text-secondary)' }}>
+            데이터 없음
           </p>
         ) : (
           <>
             <Row label="총 인구" cur={currentStats.population} cmp={cmpStats.population} />
             <Row label="세대수" cur={currentStats.households} cmp={cmpStats.households} />
+            <Row label="세대당 인구" cur={currentStats.householdSize} cmp={cmpStats.householdSize} />
             <Row label="남자" cur={currentStats.male} cmp={cmpStats.male} />
             <Row label="여자" cur={currentStats.female} cmp={cmpStats.female} />
           </>
