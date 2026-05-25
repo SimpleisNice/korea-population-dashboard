@@ -15,10 +15,25 @@ interface RegionJSON {
 function readRegionJSON(code: string): RegionJSON | null {
   try {
     const raw = fs.readFileSync(path.join(REGIONS_DIR, `${code}.json`), 'utf-8')
-    return JSON.parse(raw) as RegionJSON
+    const data = JSON.parse(raw) as RegionJSON
+    return { ...data, region: normalizeRegion(data.region) }
   } catch {
     return null
   }
+}
+
+// ── sigungu 명칭 정규화 ───────────────────────────────────────────────────────
+// 개명된 시도의 구 명칭 접두사를 제거한다.
+// 예) '강원도 춘천시' → '춘천시', '전라북도 전주시' → '전주시'
+const STALE_SIDO_PREFIXES = ['강원도 ', '전라북도 ']
+
+function normalizeRegion(region: Region): Region {
+  for (const prefix of STALE_SIDO_PREFIXES) {
+    if (region.sigungu.startsWith(prefix)) {
+      return { ...region, sigungu: region.sigungu.slice(prefix.length) }
+    }
+  }
+  return region
 }
 
 // ── 지역 목록 캐시 (index.json — 전체에서 한 번만 읽음) ──────────────────────
@@ -28,7 +43,7 @@ let indexCache: Region[] | null = null
 function loadIndex(): Region[] {
   if (indexCache) return indexCache
   const raw = fs.readFileSync(path.join(REGIONS_DIR, 'index.json'), 'utf-8')
-  indexCache = JSON.parse(raw) as Region[]
+  indexCache = (JSON.parse(raw) as Region[]).map(normalizeRegion)
   return indexCache
 }
 
