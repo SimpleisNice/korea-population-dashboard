@@ -8,6 +8,8 @@ interface Props {
   className?: string
   style?: React.CSSProperties
   formatter?: (n: number) => string
+  /** 소수점 자릿수 (정수 포맷 대신 사용) */
+  toFixed?: number
   /** 애니메이션 총 시간(초), 기본 1.2s */
   duration?: number
 }
@@ -21,6 +23,7 @@ export function AnimatedNumber({
   className,
   style,
   formatter,
+  toFixed,
   duration = 1.2,
 }: Props) {
   const ref = useRef<HTMLSpanElement>(null)
@@ -38,15 +41,19 @@ export function AnimatedNumber({
       duration,
       ease: [0.25, 0.46, 0.45, 0.94],
       onUpdate(latest) {
-        const rounded = Math.round(latest)
-        setDisplay(
-          formatter ? formatter(rounded) : rounded.toLocaleString('ko-KR'),
-        )
+        if (toFixed !== undefined) {
+          setDisplay(latest.toFixed(toFixed))
+        } else {
+          const rounded = Math.round(latest)
+          setDisplay(
+            formatter ? formatter(rounded) : rounded.toLocaleString('ko-KR'),
+          )
+        }
       },
     })
 
     return () => controls.stop()
-  }, [isInView, value, duration, formatter])
+  }, [isInView, value, duration, formatter, toFixed])
 
   return (
     <span ref={ref} className={className} style={style}>

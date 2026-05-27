@@ -36,11 +36,9 @@ html, body {
   --max-w: 430px;
 }
 
-/* Radix Tabs */
+/* Radix Tabs — background handled by motion layoutId in DetailTabs */
 [role='tab'][data-state='active'] {
-  background-color: var(--color-bg);
   color: var(--color-accent);
-  box-shadow: var(--shadow-card);
 }
 [role='tab'][data-state='inactive'] {
   background-color: transparent;

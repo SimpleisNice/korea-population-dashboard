@@ -3,9 +3,12 @@
 import { useState, useEffect, useCallback, startTransition } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { GitCompare, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
 import { fetchMonthStats } from '@/lib/actions'
 import { formatNumber, formatYM } from '@/lib/utils'
 import type { MonthlyStats } from '@/lib/types'
+
+const EASE = [0.25, 0.46, 0.45, 0.94] as [number, number, number, number]
 
 interface Props {
   regionCode: string
@@ -23,14 +26,18 @@ function DiffBadge({ a, b }: { a: number; b: number }) {
   const color = diff > 0 ? 'var(--color-positive)' : 'var(--color-negative)'
   return (
     <span style={{ fontSize: 11, color, fontWeight: 600 }}>
-      {diff > 0 ? '▲' : '▼'} {Math.abs(diff).toLocaleString('ko-KR')}{pct != null ? ` (${pct}%)` : ''}
+      {diff > 0 ? '▲' : '▼'} {Math.abs(diff).toLocaleString('ko-KR')}
+      {pct != null ? ` (${pct}%)` : ''}
     </span>
   )
 }
 
-function Row({ label, cur, cmp }: { label: string; cur: number; cmp: number }) {
+function Row({ label, cur, cmp, index }: { label: string; cur: number; cmp: number; index: number }) {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: EASE, delay: index * 0.05 }}
       className="grid grid-cols-3 items-center gap-2 py-3 border-b last:border-b-0 text-sm"
       style={{ borderColor: 'var(--color-border)' }}
     >
@@ -46,6 +53,39 @@ function Row({ label, cur, cmp }: { label: string; cur: number; cmp: number }) {
       <p className="text-left font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
         {formatNumber(cmp)}
       </p>
+    </motion.div>
+  )
+}
+
+function Skeleton() {
+  return (
+    <div className="px-4 py-2">
+      {[0, 1, 2, 3, 4].map(i => (
+        <div
+          key={i}
+          className="grid grid-cols-3 items-center gap-2 py-3 border-b last:border-b-0"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <motion.div
+            animate={{ opacity: [0.4, 0.8, 0.4] }}
+            transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
+            className="ml-auto rounded-md"
+            style={{ height: 14, width: 72, backgroundColor: 'var(--color-border)' }}
+          />
+          <motion.div
+            animate={{ opacity: [0.4, 0.8, 0.4] }}
+            transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 + 0.05 }}
+            className="mx-auto rounded-md"
+            style={{ height: 10, width: 40, backgroundColor: 'var(--color-border)' }}
+          />
+          <motion.div
+            animate={{ opacity: [0.4, 0.8, 0.4] }}
+            transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 + 0.1 }}
+            className="rounded-md"
+            style={{ height: 14, width: 60, backgroundColor: 'var(--color-border)' }}
+          />
+        </div>
+      ))}
     </div>
   )
 }
@@ -88,7 +128,9 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
 
   if (!cmp) {
     return (
-      <button
+      <motion.button
+        whileHover={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-accent)' }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => {
           const idx = availableMonths.indexOf(currentMonth)
           const defaultCmp = availableMonths[idx - 1] ?? availableMonths.find(m => m !== currentMonth) ?? ''
@@ -101,11 +143,13 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
           padding: '14px 20px',
           marginBottom: 20,
           border: '1px dashed var(--color-border)',
+          cursor: 'pointer',
+          transition: 'background-color 0.2s, border-color 0.2s',
         }}
       >
         <GitCompare size={15} />
         시점 비교 추가
-      </button>
+      </motion.button>
     )
   }
 
@@ -116,6 +160,7 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
         backgroundColor: 'var(--color-bg)',
         boxShadow: 'var(--shadow-card)',
         marginBottom: 20,
+        overflow: 'hidden',
       }}
     >
       {/* 헤더 */}
@@ -126,14 +171,15 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
         <p className="text-[13px] font-semibold" style={{ color: 'var(--color-text-primary)' }}>
           시점 비교
         </p>
-        <button
+        <motion.button
+          whileTap={{ scale: 0.88 }}
           onClick={() => setCmp('')}
           className="flex h-7 w-7 items-center justify-center rounded-full"
-          style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-surface)' }}
+          style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-surface)', border: 'none', cursor: 'pointer' }}
           aria-label="비교 닫기"
         >
           <X size={13} />
-        </button>
+        </motion.button>
       </div>
 
       {/* 컬럼 헤더 */}
@@ -153,38 +199,61 @@ export function TimePeriodCompare({ regionCode, currentMonth, availableMonths, c
             {availableMonths
               .filter(m => m !== currentMonth)
               .map(m => (
-                <option key={m} value={m}>
-                  {formatYM(m)}
-                </option>
+                <option key={m} value={m}>{formatYM(m)}</option>
               ))}
           </select>
         </div>
       </div>
 
       {/* 비교 지표 */}
-      <div className="px-4">
+      <AnimatePresence mode="wait">
         {loading ? (
-          <p className="py-6 text-center text-[13px]" style={{ color: 'var(--color-text-secondary)' }}>
-            불러오는 중…
-          </p>
+          <motion.div
+            key="skeleton"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <Skeleton />
+          </motion.div>
         ) : fetchError ? (
-          <p className="py-6 text-center text-[13px]" style={{ color: 'var(--color-negative)' }}>
+          <motion.p
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="py-6 text-center text-[13px]"
+            style={{ color: 'var(--color-negative)' }}
+          >
             데이터를 불러오지 못했습니다
-          </p>
+          </motion.p>
         ) : !cmpStats ? (
-          <p className="py-6 text-center text-[13px]" style={{ color: 'var(--color-text-secondary)' }}>
+          <motion.p
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="py-6 text-center text-[13px]"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             데이터 없음
-          </p>
+          </motion.p>
         ) : (
-          <>
-            <Row label="총 인구" cur={currentStats.population} cmp={cmpStats.population} />
-            <Row label="세대수" cur={currentStats.households} cmp={cmpStats.households} />
-            <Row label="세대당 인구" cur={currentStats.householdSize} cmp={cmpStats.householdSize} />
-            <Row label="남자" cur={currentStats.male} cmp={cmpStats.male} />
-            <Row label="여자" cur={currentStats.female} cmp={cmpStats.female} />
-          </>
+          <motion.div
+            key={cmp}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="px-4"
+          >
+            <Row label="총 인구"    cur={currentStats.population}   cmp={cmpStats.population}   index={0} />
+            <Row label="세대수"     cur={currentStats.households}   cmp={cmpStats.households}   index={1} />
+            <Row label="세대당 인구" cur={currentStats.householdSize} cmp={cmpStats.householdSize} index={2} />
+            <Row label="남자"       cur={currentStats.male}         cmp={cmpStats.male}         index={3} />
+            <Row label="여자"       cur={currentStats.female}       cmp={cmpStats.female}       index={4} />
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   )
 }
