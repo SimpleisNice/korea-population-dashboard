@@ -8,9 +8,18 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  CartesianGrid,
 } from 'recharts'
 import { ChangeChart } from './ChangeChart'
 import type { TrendPoint } from '@/lib/types'
+import {
+  TOOLTIP_CONTENT_STYLE,
+  TOOLTIP_ITEM_STYLE,
+  TOOLTIP_LABEL_STYLE,
+  AXIS_TICK,
+  fmtYAxis,
+  fmtXAxis,
+} from '@/lib/chart-utils'
 
 interface Props {
   trend: TrendPoint[]
@@ -123,47 +132,47 @@ function CumulativeChart({ data }: { data: CumulativePoint[] }) {
   const lastValue = data[data.length - 1]?.cumulative ?? 0
   const isNet = lastValue >= 0
 
+  // CSS variables don't work as SVG presentation attributes — use hardcoded hex values
+  const strokeColor = isNet ? '#2563eb' : '#dc2626'
+  const stopColor   = isNet ? '#2563eb' : '#dc2626'
+
   return (
     <div style={{ height: 180, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="migGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="5%"
-                stopColor={isNet ? 'var(--color-accent)' : 'var(--color-negative)'}
-                stopOpacity={0.15}
-              />
-              <stop
-                offset="95%"
-                stopColor={isNet ? 'var(--color-accent)' : 'var(--color-negative)'}
-                stopOpacity={0}
-              />
+              <stop offset="5%"  style={{ stopColor, stopOpacity: 0.15 }} />
+              <stop offset="95%" style={{ stopColor, stopOpacity: 0 }} />
             </linearGradient>
           </defs>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="var(--color-border)"
+            vertical={false}
+            strokeOpacity={0.5}
+          />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 9, fill: 'var(--color-text-secondary)' }}
+            tick={AXIS_TICK}
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
-            tickFormatter={(v: string) => v.slice(2)}
+            tickFormatter={fmtXAxis}
           />
           <YAxis
-            tick={{ fontSize: 9, fill: 'var(--color-text-secondary)' }}
+            tick={AXIS_TICK}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v) => v.toLocaleString('ko-KR')}
-            width={48}
+            tickFormatter={fmtYAxis}
+            width={40}
           />
           <ReferenceLine y={0} stroke="var(--color-border)" strokeDasharray="4 3" strokeWidth={1} />
           <Tooltip
-            contentStyle={{
-              borderRadius: 8,
-              border: '1px solid var(--color-border)',
-              fontSize: 12,
-              backgroundColor: 'var(--color-bg)',
-            }}
+            contentStyle={TOOLTIP_CONTENT_STYLE}
+            itemStyle={TOOLTIP_ITEM_STYLE}
+            labelStyle={TOOLTIP_LABEL_STYLE}
+            cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '3 3' }}
             formatter={(v) => {
               const n = v as number
               return [`${n >= 0 ? '+' : ''}${n.toLocaleString('ko-KR')}명`, '누적 순이동']
@@ -172,10 +181,14 @@ function CumulativeChart({ data }: { data: CumulativePoint[] }) {
           <Area
             type="monotone"
             dataKey="cumulative"
-            stroke={isNet ? 'var(--color-accent)' : 'var(--color-negative)'}
-            strokeWidth={2}
+            stroke={strokeColor}
+            strokeWidth={1.5}
             fill="url(#migGrad)"
             dot={false}
+            activeDot={{ r: 4, fill: strokeColor, stroke: 'var(--color-bg)', strokeWidth: 2 }}
+            isAnimationActive={true}
+            animationDuration={900}
+            animationEasing="ease-out"
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -23,9 +23,10 @@ function readRegionJSON(code: string): RegionJSON | null {
 }
 
 // ── sigungu 명칭 정규화 ───────────────────────────────────────────────────────
-// 개명된 시도의 구 명칭 접두사를 제거한다.
-// 예) '강원도 춘천시' → '춘천시', '전라북도 전주시' → '전주시'
-const STALE_SIDO_PREFIXES = ['강원도 ', '전라북도 ']
+// csv-to-json.ts 가 LEGACY_CODE_MAP 을 통해 구 코드 데이터를 신 코드로 병합하므로
+// 신 JSON 에는 이미 clean 한 이름이 저장된다.
+// 아래 함수는 구 JSON 파일이 캐시에 남아있는 경우를 대비한 안전망으로만 유지한다.
+const STALE_SIDO_PREFIXES = ['강원도 ', '전라북도 ', '강원특별자치도 ', '전북특별자치도 ']
 
 function normalizeRegion(region: Region): Region {
   for (const prefix of STALE_SIDO_PREFIXES) {

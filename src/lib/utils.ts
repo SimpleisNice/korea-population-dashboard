@@ -10,6 +10,18 @@ export function formatNumber(n: number): string {
   return n.toLocaleString('ko-KR')
 }
 
+/**
+ * 만단위 압축 표기. 10,000 이상이면 "X.X만" 형태로 축약.
+ * StatCard 등 공간이 제한된 곳에서 overflow 방지용.
+ * 예) 123,456 → "12.3만",  9,876 → "9,876"
+ */
+export function formatCompact(n: number): string {
+  if (Math.abs(n) >= 10000) {
+    return (n / 10000).toFixed(1) + '만'
+  }
+  return n.toLocaleString('ko-KR')
+}
+
 export function formatChange(n: number): string {
   if (n === 0) return '0'
   return (n > 0 ? '+' : '') + n.toLocaleString('ko-KR')

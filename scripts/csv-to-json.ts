@@ -22,8 +22,62 @@ interface RegionJSON { region: Region; months: Record<string, MonthlyStats>; age
 const SIDO_BY_PREFIX: Record<string, string> = {
   '11': '서울특별시', '26': '부산광역시', '27': '대구광역시', '28': '인천광역시',
   '29': '광주광역시', '30': '대전광역시', '31': '울산광역시', '36': '세종특별자치시',
-  '41': '경기도', '42': '강원특별자치도', '43': '충청북도', '44': '충청남도',
-  '45': '전북특별자치도', '46': '전라남도', '47': '경상북도', '48': '경상남도', '50': '제주특별자치도',
+  '41': '경기도',
+  '42': '강원특별자치도', // 구 코드 (2023.06 이전)
+  '43': '충청북도', '44': '충청남도',
+  '45': '전북특별자치도', // 구 코드 (2023.12 이전)
+  '46': '전라남도', '47': '경상북도', '48': '경상남도', '50': '제주특별자치도',
+  '51': '강원특별자치도', // 신 코드 (2023.07~)
+  '52': '전북특별자치도', // 신 코드 (2024.01~)
+}
+
+// ── 행정구역 개편 코드 매핑 ──────────────────────────────────────────────────
+// 개편 전 구 코드 → 개편 후 신 코드
+// 구 코드 데이터를 신 코드 JSON에 병합하여 시계열 연속성을 유지한다.
+//
+// ① 강원특별자치도 (2023.06.11 개편: 강원도 → 강원특별자치도, 42xx → 51xx)
+// ② 전북특별자치도 (2024.01.18 개편: 전라북도 → 전북특별자치도, 45xx → 52xx)
+const LEGACY_CODE_MAP: Record<string, string> = {
+  // 강원특별자치도
+  '4211000000': '5111000000', // 춘천시
+  '4213000000': '5113000000', // 원주시
+  '4215000000': '5115000000', // 강릉시
+  '4217000000': '5117000000', // 동해시
+  '4219000000': '5119000000', // 태백시
+  '4221000000': '5121000000', // 속초시
+  '4223000000': '5123000000', // 삼척시
+  '4272000000': '5172000000', // 홍천군
+  '4273000000': '5173000000', // 횡성군
+  '4275000000': '5175000000', // 영월군
+  '4276000000': '5176000000', // 평창군
+  '4277000000': '5177000000', // 정선군
+  '4278000000': '5178000000', // 철원군
+  '4279000000': '5179000000', // 화천군
+  '4280000000': '5180000000', // 양구군
+  '4281000000': '5181000000', // 인제군
+  '4282000000': '5182000000', // 고성군
+  '4283000000': '5183000000', // 양양군
+  // 전북특별자치도
+  '4511000000': '5211000000', // 전주시
+  '4511100000': '5211100000', // 전주시 완산구
+  '4511300000': '5211300000', // 전주시 덕진구
+  '4513000000': '5213000000', // 군산시
+  '4514000000': '5214000000', // 익산시
+  '4518000000': '5218000000', // 정읍시
+  '4519000000': '5219000000', // 남원시
+  '4521000000': '5221000000', // 김제시
+  '4571000000': '5271000000', // 완주군
+  '4572000000': '5272000000', // 진안군
+  '4573000000': '5273000000', // 무주군
+  '4574000000': '5274000000', // 장수군
+  '4575000000': '5275000000', // 임실군
+  '4577000000': '5277000000', // 순창군
+  '4579000000': '5279000000', // 고창군
+  '4580000000': '5280000000', // 부안군
+}
+
+function canonicalCode(raw: string): string {
+  return LEGACY_CODE_MAP[raw] ?? raw
 }
 
 function splitCSVLine(line: string): string[] {
@@ -56,14 +110,25 @@ function parseMoisCSV(content: string) {
   const data = new Map<string, Map<string, MonthlyStats>>()
   for (let rowIdx = 3; rowIdx < lines.length; rowIdx++) {
     const cols = splitCSVLine(lines[rowIdx])
-    const code = cols[0].replace(/\s/g, '')
-    if (!/^\d{10}$/.test(code) || code.endsWith('00000000')) continue
-    const sido = SIDO_BY_PREFIX[code.slice(0, 2)]
+    const rawCode = cols[0].replace(/\s/g, '')
+    if (!/^\d{10}$/.test(rawCode) || rawCode.endsWith('00000000')) continue
+    const sido = SIDO_BY_PREFIX[rawCode.slice(0, 2)]
     if (!sido) continue
+    const code = canonicalCode(rawCode)
+    // sido는 canonical code 기준으로 재산출 (구 42xx → 신 51xx 이후에도 '강원특별자치도' 유지)
+    const canonicalSido = SIDO_BY_PREFIX[code.slice(0, 2)] ?? sido
     const rawName = cols[1].replace(/\s+/g, ' ').trim()
-    const sigungu = rawName.startsWith(sido) ? rawName.slice(sido.length).trim() : rawName
-    regions.push({ code, sido, sigungu })
-    const monthMap = new Map<string, MonthlyStats>()
+    // 시도명 접두사 제거 (구 이름 포함): rawName 에서 현재/과거 시도명 모두 시도
+    let sigungu = rawName
+    for (const prefix of [canonicalSido, sido]) {
+      if (sigungu.startsWith(prefix)) { sigungu = sigungu.slice(prefix.length).trim(); break }
+    }
+    // 이미 존재하는 지역이 있으면 이름을 덮어쓰지 않음 (신 코드 CSV의 clean한 이름 우선)
+    // — 파일 처리 순서가 오름차순이므로 신 코드 파일이 나중에 처리되어 자동으로 덮어씀
+    regions.push({ code, sido: canonicalSido, sigungu })
+    // 같은 canonical code가 한 CSV 안에 구 코드·신 코드 두 번 나올 수 있으므로 병합
+    if (!data.has(code)) data.set(code, new Map())
+    const monthMap = data.get(code)!
     for (const m of months) {
       const b = m.colOffset
       if (b + 4 >= cols.length) continue
@@ -71,7 +136,6 @@ function parseMoisCSV(content: string) {
       if (!population) continue
       monthMap.set(m.key, { year: m.year, month: m.month, population, households: parseNum(cols[b+1]), householdSize: parseFloat(cols[b+2]) || 0, male: parseNum(cols[b+3]), female: parseNum(cols[b+4]) })
     }
-    data.set(code, monthMap)
   }
   return { regions, data }
 }
@@ -88,9 +152,10 @@ function parseAgeCSV(content: string) {
   const data = new Map<string, Map<string, AgeGroup[]>>()
   for (let rowIdx = 4; rowIdx < lines.length; rowIdx++) {
     const cols = splitCSVLine(lines[rowIdx])
-    const code = cols[0].replace(/\s/g, '')
-    if (!/^\d{10}$/.test(code) || code.endsWith('00000000')) continue
-    if (!SIDO_BY_PREFIX[code.slice(0, 2)]) continue
+    const rawCode = cols[0].replace(/\s/g, '')
+    if (!/^\d{10}$/.test(rawCode) || rawCode.endsWith('00000000')) continue
+    if (!SIDO_BY_PREFIX[rawCode.slice(0, 2)]) continue
+    const code = canonicalCode(rawCode)
     const monthMap = data.get(code) ?? new Map<string, AgeGroup[]>()
     for (const { colOffset: b, key } of months) {
       if (b + 38 >= cols.length) continue

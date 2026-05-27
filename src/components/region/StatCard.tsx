@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { formatNumber } from '@/lib/utils'
+import { formatCompact } from '@/lib/utils'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 
 interface Props {
@@ -32,6 +32,20 @@ export function StatCard({ label, value, change, yoyChange, unit, small, toFixed
       ? 'var(--color-negative)'
       : 'var(--color-neutral)'
 
+  // 10,000 이상 정수값 → 만단위 압축 표기로 overflow 방지
+  const useCompact = typeof value === 'number' && toFixed === undefined && value >= 10000
+  // AnimatedNumber에서 쓸 만단위 formatter
+  // (0 → target 애니메이션 중간도 만단위로 표시)
+  const compactFormatter = useCompact
+    ? (n: number) => (n / 10000).toFixed(1) + '만'
+    : undefined
+
+  // change도 10,000 이상이면 압축
+  const fmtChange = (v: number) =>
+    toFixed !== undefined
+      ? Math.abs(v).toFixed(toFixed)
+      : formatCompact(Math.abs(v))
+
   return (
     <motion.div
       className="flex-1 rounded-xl"
@@ -40,65 +54,79 @@ export function StatCard({ label, value, change, yoyChange, unit, small, toFixed
       style={{
         backgroundColor: 'var(--color-bg)',
         boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-        padding: '18px 20px',
+        padding: '16px 14px',
+        minWidth: 0,   // flex 자식이 부모를 초과하지 않도록
+        overflow: 'hidden',
       }}
     >
       <p
-        className="text-[13px] font-medium"
-        style={{ color: 'var(--color-text-secondary)', margin: '0 0 8px' }}
+        className="text-[12px] font-medium"
+        style={{ color: 'var(--color-text-secondary)', margin: '0 0 6px', whiteSpace: 'nowrap' }}
       >
         {label}
       </p>
 
-      <p
+      {/* 숫자 영역 — flex로 단위 텍스트와 나란히 */}
+      <div
         style={{
-          fontSize: small ? 30 : 34,
-          fontWeight: 800,
-          color: 'var(--color-text-primary)',
-          margin: 0,
-          lineHeight: 1.1,
-          letterSpacing: '-0.01em',
-          fontVariantNumeric: 'tabular-nums',
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 2,
+          minWidth: 0,
+          overflow: 'hidden',
         }}
       >
-        {typeof value === 'number' ? (
-          <AnimatedNumber
-            value={value}
-            toFixed={toFixed}
-            duration={1.2}
-            style={{ fontVariantNumeric: 'tabular-nums' }}
-          />
-        ) : (
-          value
-        )}
+        <span
+          style={{
+            fontSize: small ? 26 : 30,
+            fontWeight: 800,
+            color: 'var(--color-text-primary)',
+            lineHeight: 1.1,
+            letterSpacing: '-0.01em',
+            fontVariantNumeric: 'tabular-nums',
+            flexShrink: 1,
+            minWidth: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {typeof value === 'number' ? (
+            <AnimatedNumber
+              value={value}
+              formatter={compactFormatter}
+              toFixed={toFixed}
+              duration={1.2}
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            />
+          ) : (
+            value
+          )}
+        </span>
         {unit && (
-          <span style={{ fontSize: 14, fontWeight: 500, marginLeft: 3 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             {unit}
           </span>
         )}
-      </p>
+      </div>
 
       {change !== undefined && (
         <p
-          className="text-[13px] font-semibold"
-          style={{ margin: '8px 0 0', color: changeColor }}
+          className="text-[12px] font-semibold"
+          style={{ margin: '6px 0 0', color: changeColor, whiteSpace: 'nowrap' }}
         >
           {isPositive ? '▲' : isNegative ? '▼' : '–'}{' '}
-          {toFixed !== undefined
-            ? Math.abs(change).toFixed(toFixed)
-            : Math.abs(change).toLocaleString('ko-KR')}{' '}
+          {fmtChange(change)}{' '}
           전월비
         </p>
       )}
       {yoyChange != null && (
         <p
-          className="text-[12px] font-medium"
-          style={{ margin: '3px 0 0', color: yoyColor }}
+          className="text-[11px] font-medium"
+          style={{ margin: '2px 0 0', color: yoyColor, whiteSpace: 'nowrap' }}
         >
           {isYoyPositive ? '▲' : isYoyNegative ? '▼' : '–'}{' '}
-          {toFixed !== undefined
-            ? Math.abs(yoyChange).toFixed(toFixed)
-            : Math.abs(yoyChange).toLocaleString('ko-KR')}{' '}
+          {fmtChange(yoyChange)}{' '}
           전년비
         </p>
       )}

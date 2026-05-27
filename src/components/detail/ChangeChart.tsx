@@ -8,9 +8,18 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  CartesianGrid,
   Cell,
 } from 'recharts'
 import type { TrendPoint } from '@/lib/types'
+import {
+  TOOLTIP_CONTENT_STYLE,
+  TOOLTIP_ITEM_STYLE,
+  TOOLTIP_LABEL_STYLE,
+  AXIS_TICK,
+  fmtYAxis,
+  fmtXAxis,
+} from '@/lib/chart-utils'
 
 interface Props {
   data: TrendPoint[]
@@ -23,36 +32,46 @@ export function ChangeChart({ data }: Props) {
   return (
     <div style={{ height: 200, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="var(--color-border)"
+            vertical={false}
+            strokeOpacity={0.5}
+          />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 9, fill: 'var(--color-text-secondary)' }}
+            tick={AXIS_TICK}
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
-            tickFormatter={(v: string) => v.slice(2)}
+            tickFormatter={fmtXAxis}
           />
           <YAxis
-            tick={{ fontSize: 9, fill: 'var(--color-text-secondary)' }}
+            tick={AXIS_TICK}
             tickLine={false}
             axisLine={false}
-            tickFormatter={v => v.toLocaleString('ko-KR')}
-            width={48}
+            tickFormatter={fmtYAxis}
+            width={40}
           />
           <ReferenceLine y={0} stroke="var(--color-border)" strokeWidth={1} />
           <Tooltip
-            contentStyle={{
-              borderRadius: 8,
-              border: '1px solid var(--color-border)',
-              fontSize: 12,
-              backgroundColor: 'var(--color-bg)',
-            }}
+            contentStyle={TOOLTIP_CONTENT_STYLE}
+            itemStyle={TOOLTIP_ITEM_STYLE}
+            labelStyle={TOOLTIP_LABEL_STYLE}
+            cursor={{ fill: 'var(--color-border)', fillOpacity: 0.15 }}
             formatter={(v) => {
               const n = v as number
               return [`${n >= 0 ? '+' : ''}${n.toLocaleString('ko-KR')}명`, '증감']
             }}
           />
-          <Bar dataKey="change" radius={[3, 3, 0, 0]}>
+          <Bar
+            dataKey="change"
+            radius={[3, 3, 0, 0]}
+            isAnimationActive={true}
+            animationDuration={800}
+            animationEasing="ease-out"
+          >
             {chartData.map((point, i) => (
               <Cell
                 key={i}
@@ -63,6 +82,7 @@ export function ChangeChart({ data }: Props) {
                       ? 'var(--color-negative)'
                       : 'var(--color-border)'
                 }
+                fillOpacity={point.change > 0 ? 0.85 : point.change < 0 ? 0.8 : 1}
               />
             ))}
           </Bar>

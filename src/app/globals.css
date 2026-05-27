@@ -36,6 +36,15 @@ html, body {
   --max-w: 430px;
 }
 
+/* 스크롤바 숨김 */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Radix Tabs — background handled by motion layoutId in DetailTabs */
 [role='tab'][data-state='active'] {
   color: var(--color-accent);
