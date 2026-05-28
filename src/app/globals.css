@@ -14,6 +14,8 @@
   --color-negative-light: #fef2f2;
   --color-neutral: #6b7280;
   --color-female: #f97316;
+  --color-accent-b: #7c3aed;
+  --color-accent-b-light: #f5f3ff;
 
   --font-size-stat-lg: 2rem;
   --font-size-stat-md: 1.25rem;
@@ -34,6 +36,25 @@ html, body {
 
 :root {
   --max-w: 430px;
+}
+
+/* Skeleton shimmer */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 0.3; }
+}
+
+/* Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* prefers-reduced-motion: 모션 최소화 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* 스크롤바 숨김 */

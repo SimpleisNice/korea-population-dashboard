@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, startTransition } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import { AgeChart } from './AgeChart'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { fetchAgeGroups } from '@/lib/actions'
 import type { AgeGroup } from '@/lib/types'
 
@@ -34,11 +36,16 @@ export function AgeCompareTab({ regionCode, currentAgeGroups, currentMonth, avai
 
   const [compareYm, setCompareYm] = useState(defaultCmpYm)
   const [compareData, setCompareData] = useState<AgeGroup[] | null>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!compareYm) return
+    setLoading(true)
     fetchAgeGroups(regionCode, compareYm).then(data => {
-      startTransition(() => setCompareData(data))
+      startTransition(() => {
+        setCompareData(data)
+        setLoading(false)
+      })
     })
   }, [regionCode, compareYm])
 
@@ -59,13 +66,27 @@ export function AgeCompareTab({ regionCode, currentAgeGroups, currentMonth, avai
             <select
               value={compareYm}
               onChange={e => setCompareYm(e.target.value)}
+              disabled={loading}
               className="text-[11px] font-semibold bg-transparent appearance-none cursor-pointer"
-              style={{ color: '#7c3aed' }}
+              style={{ color: 'var(--color-accent)', opacity: loading ? 0.5 : 1, transition: 'opacity 0.15s' }}
             >
               {otherMonths.map(m => (
                 <option key={m} value={m}>{formatYM(m)}</option>
               ))}
             </select>
+            {loading && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                style={{
+                  width: 12, height: 12, borderRadius: '50%',
+                  border: '2px solid var(--color-border)',
+                  borderTopColor: 'var(--color-accent)',
+                  animation: 'spin 0.7s linear infinite',
+                }}
+              />
+            )}
           </div>
         )}
       </div>
@@ -84,7 +105,7 @@ export function AgeCompareTab({ regionCode, currentAgeGroups, currentMonth, avai
             <p className="text-[10px]" style={{ color: 'var(--color-text-secondary)', marginBottom: 2 }}>
               {formatYM(compareYm)} 고령화 지수
             </p>
-            <p className="text-[15px] font-bold" style={{ color: '#7c3aed' }}>
+            <p className="text-[15px] font-bold" style={{ color: 'var(--color-accent)' }}>
               {compareIndex}
             </p>
           </div>
@@ -123,7 +144,31 @@ export function AgeCompareTab({ regionCode, currentAgeGroups, currentMonth, avai
         </div>
       )}
 
-      <AgeChart data={currentAgeGroups} compareData={compareData ?? undefined} />
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.div
+            key="skeleton"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+          >
+            {Array.from({ length: 9 }).map((_, i) => (
+              <Skeleton key={i} height={20} width={`${60 + Math.random() * 35}%`} rounded={4} />
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="chart"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <AgeChart data={currentAgeGroups} compareData={compareData ?? undefined} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

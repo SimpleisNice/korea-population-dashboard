@@ -70,19 +70,19 @@ export function HomePageClient({
       </Section>
 
       {/* 검색창 */}
-      <Section delay={0.08} style={{ marginBottom: 20 }}>
+      <Section delay={0.06} style={{ marginBottom: 20 }}>
         <RegionSearch regions={regions} />
       </Section>
 
       {/* 전국 총괄 현황 */}
       {summary && (
-        <Section delay={0.16} style={{ marginBottom: 28 }}>
+        <Section delay={0.1} style={{ marginBottom: 28 }}>
           <NationalSummary summary={summary} />
         </Section>
       )}
 
       {/* 인기 지역 */}
-      <Section delay={0.24} style={{ marginBottom: 28 }}>
+      <Section delay={0.14} style={{ marginBottom: 28 }}>
         <PopularRegions
           growthRegions={growthRegions}
           declineRegions={declineRegions}
@@ -91,12 +91,12 @@ export function HomePageClient({
       </Section>
 
       {/* 관심 지역 */}
-      <Section delay={0.32}>
+      <Section delay={0.18}>
         <FavoriteRegions />
       </Section>
 
       {/* 최근 본 지역 */}
-      <Section delay={0.4}>
+      <Section delay={0.22}>
         <RecentRegions />
       </Section>
     </div>

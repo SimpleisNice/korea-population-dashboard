@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { motion, AnimatePresence } from 'motion/react'
 import { TrendChart } from '@/components/region/TrendChart'
@@ -28,6 +28,7 @@ const TABS = [
 ]
 
 const CONTENT_EASE = [0.25, 0.46, 0.45, 0.94] as [number, number, number, number]
+const TAB_IDS = TABS.map(t => t.id)
 
 interface Props {
   detail: RegionDetail
@@ -46,13 +47,30 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
   const { latest, prevMonth, trend, ageGroups } = detail
   const [range, setRange] = useState<Range>('12')
   const [activeTab, setActiveTab] = useState('trend')
+  const prevTabRef = useRef('trend')
+  const tabBarRef = useRef<HTMLDivElement>(null)
+
+  function handleTabChange(tab: string) {
+    prevTabRef.current = activeTab
+    setActiveTab(tab)
+    // 탭 바 위치로 부드럽게 스크롤
+    setTimeout(() => {
+      tabBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }, 50)
+  }
+
+  function getDirection(from: string, to: string): 1 | -1 {
+    return TAB_IDS.indexOf(to) > TAB_IDS.indexOf(from) ? 1 : -1
+  }
 
   const visibleTrend = sliceTrend(trend, range)
   const forecast = buildForecast(visibleTrend, 6)
+  const direction = getDirection(prevTabRef.current, activeTab)
 
   return (
-    <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+    <Tabs.Root value={activeTab} onValueChange={handleTabChange} className="space-y-4">
       {/* sticky 탭 바 */}
+      <div ref={tabBarRef}>
       <Tabs.List
         className="flex gap-1 rounded-xl sticky z-20"
         style={{
@@ -89,14 +107,15 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
           </Tabs.Trigger>
         ))}
       </Tabs.List>
+      </div>
 
       {/* 인구추이 탭 */}
       <Tabs.Content value="trend" forceMount style={{ display: activeTab === 'trend' ? undefined : 'none' }}>
         <motion.div
           key="trend"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: CONTENT_EASE }}
+          initial={{ opacity: 0, x: direction * 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, ease: CONTENT_EASE }}
         >
           <div
             className="rounded-xl p-4 space-y-3"
@@ -118,9 +137,9 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
       <Tabs.Content value="household" forceMount style={{ display: activeTab === 'household' ? undefined : 'none' }}>
         <motion.div
           key="household"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: CONTENT_EASE }}
+          initial={{ opacity: 0, x: direction * 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, ease: CONTENT_EASE }}
           className="space-y-3"
         >
           <div className="flex gap-3">
@@ -164,9 +183,9 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
       <Tabs.Content value="age" forceMount style={{ display: activeTab === 'age' ? undefined : 'none' }}>
         <motion.div
           key="age"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: CONTENT_EASE }}
+          initial={{ opacity: 0, x: direction * 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, ease: CONTENT_EASE }}
         >
           <AgeInsightCards ageGroups={ageGroups} latest={latest} />
           <div
@@ -187,9 +206,9 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
       <Tabs.Content value="change" forceMount style={{ display: activeTab === 'change' ? undefined : 'none' }}>
         <motion.div
           key="change"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: CONTENT_EASE }}
+          initial={{ opacity: 0, x: direction * 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, ease: CONTENT_EASE }}
         >
           <ChangeSummary trend={visibleTrend} />
           <div
@@ -211,9 +230,9 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
       <Tabs.Content value="migration" forceMount style={{ display: activeTab === 'migration' ? undefined : 'none' }}>
         <motion.div
           key="migration"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: CONTENT_EASE }}
+          initial={{ opacity: 0, x: direction * 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, ease: CONTENT_EASE }}
         >
           <MigrationTab trend={visibleTrend} />
         </motion.div>
@@ -234,17 +253,32 @@ function RangeToggle({ value, onChange }: { value: Range; onChange: (v: Range) =
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className="rounded-md text-[11px] font-semibold transition-colors"
+          className="rounded-md text-[11px] font-semibold"
           style={{
             padding: '3px 9px',
-            backgroundColor: value === opt.value ? 'var(--color-bg)' : 'transparent',
-            color: value === opt.value ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-            boxShadow: value === opt.value ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+            position: 'relative',
             border: 'none',
             cursor: 'pointer',
+            background: 'transparent',
+            color: value === opt.value ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+            transition: 'color 0.18s',
           }}
         >
-          {opt.label}
+          {value === opt.value && (
+            <motion.div
+              layoutId="rangeBg"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 6,
+                backgroundColor: 'var(--color-bg)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                zIndex: 0,
+              }}
+              transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+            />
+          )}
+          <span style={{ position: 'relative', zIndex: 1 }}>{opt.label}</span>
         </button>
       ))}
     </div>

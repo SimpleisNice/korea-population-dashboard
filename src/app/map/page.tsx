@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
 import { KoreaHeatmap } from '@/components/map/KoreaHeatmap'
+import { FadeIn } from '@/components/ui/FadeIn'
 import { getSidoStats } from '@/lib/data'
 
 export const metadata: Metadata = {
@@ -15,14 +16,10 @@ export default function MapPage() {
   return (
     <MobileShell>
       <Header title="인구 지도" showSearch />
-      <div style={{ padding: '16px 16px 32px' }}>
-        <p
-          className="text-[13px]"
-          style={{ color: 'var(--color-text-secondary)', marginBottom: 16 }}
-        >
-          시도를 탭하면 인구 현황을 확인할 수 있습니다. 색상이 진할수록 변화폭이 큽니다.
-        </p>
-        <KoreaHeatmap sidoStats={sidoStats} />
+      <div style={{ padding: '12px 16px 32px' }}>
+        <FadeIn>
+          <KoreaHeatmap sidoStats={sidoStats} />
+        </FadeIn>
       </div>
     </MobileShell>
   )

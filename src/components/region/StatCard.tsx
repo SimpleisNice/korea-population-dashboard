@@ -49,8 +49,9 @@ export function StatCard({ label, value, change, yoyChange, unit, small, toFixed
   return (
     <motion.div
       className="flex-1 rounded-xl"
-      whileHover={{ boxShadow: '0 4px 12px rgba(0,0,0,0.10)', y: -1 }}
-      transition={{ duration: 0.2 }}
+      whileHover={{ boxShadow: '0 4px 16px rgba(0,0,0,0.10)', y: -2 }}
+      whileTap={{ scale: 0.97, y: 0 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
       style={{
         backgroundColor: 'var(--color-bg)',
         boxShadow: '0 1px 3px rgba(0,0,0,0.08)',

@@ -2,9 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'motion/react'
 import SouthKorea from '@svg-maps/south-korea'
 import type { SidoStat } from '@/lib/data'
-import { formatNumber } from '@/lib/utils'
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
+
+const EASE = [0.25, 0.46, 0.45, 0.94] as [number, number, number, number]
 
 const ID_TO_SIDO: Record<string, string> = {
   'seoul':               '서울특별시',
@@ -55,18 +58,18 @@ export function KoreaHeatmap({ sidoStats }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const statsMap = new Map(sidoStats.map(s => [s.sido, s]))
-
   const selectedSido = selectedId ? ID_TO_SIDO[selectedId] : null
   const selectedStat = selectedSido ? statsMap.get(selectedSido) : null
 
   function handleClick(id: string) {
-    if (selectedId === id) {
-      const sido = ID_TO_SIDO[id]
-      if (sido) router.push(`/ranking?sido=${encodeURIComponent(sido)}`)
-    } else {
-      setSelectedId(id)
-    }
+    setSelectedId(prev => prev === id ? null : id)
   }
+
+  const changeRate = selectedStat?.changeRate ?? 0
+  const changeColor =
+    changeRate > 0 ? 'var(--color-positive)' :
+    changeRate < 0 ? 'var(--color-negative)' :
+    'var(--color-neutral)'
 
   return (
     <div>
@@ -84,14 +87,20 @@ export function KoreaHeatmap({ sidoStats }: Props) {
             const isSelected = selectedId === loc.id
 
             return (
-              <path
+              <motion.path
                 key={loc.id}
                 d={loc.path}
                 fill={fill}
                 stroke={isSelected ? 'var(--color-accent)' : '#ffffff'}
                 strokeWidth={isSelected ? 2 : 0.8}
-                style={{ cursor: 'pointer', transition: 'opacity 150ms' }}
-                opacity={selectedId && !isSelected ? 0.65 : 1}
+                style={{ cursor: 'pointer' }}
+                animate={{
+                  opacity: selectedId && !isSelected ? 0.55 : 1,
+                  strokeWidth: isSelected ? 2 : 0.8,
+                }}
+                whileHover={{ opacity: selectedId && !isSelected ? 0.7 : 0.88 }}
+                whileTap={{ opacity: 0.6 }}
+                transition={{ duration: 0.18, ease: EASE }}
                 onClick={() => handleClick(loc.id)}
                 aria-label={sido ?? loc.name}
               />
@@ -103,93 +112,155 @@ export function KoreaHeatmap({ sidoStats }: Props) {
       {/* 선택 지역 패널 */}
       <div
         style={{
-          minHeight: 80,
-          borderRadius: 12,
+          minHeight: 90,
+          borderRadius: 14,
           border: '1px solid var(--color-border)',
           backgroundColor: selectedStat ? 'var(--color-bg)' : 'var(--color-surface)',
-          padding: '14px 16px',
           marginTop: 12,
-          transition: 'background-color 200ms',
+          overflow: 'hidden',
+          transition: 'background-color 0.2s',
         }}
       >
-        {selectedStat && selectedSido ? (
-          <div>
-            <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
-              <p className="text-[15px] font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                {selectedSido}
-              </p>
-              <button
-                onClick={() => router.push(`/ranking?sido=${encodeURIComponent(selectedSido)}`)}
-                className="rounded-full text-[12px] font-semibold"
-                style={{
-                  backgroundColor: 'var(--color-accent)',
-                  color: '#fff',
-                  padding: '4px 12px',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                순위 보기
-              </button>
-            </div>
-            <div className="flex gap-4">
-              <div>
-                <p className="text-[11px] font-medium" style={{ color: 'var(--color-text-secondary)', marginBottom: 2 }}>
-                  총인구
+        <AnimatePresence mode="wait">
+          {selectedStat && selectedSido ? (
+            <motion.div
+              key={selectedId}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+              style={{ padding: '16px 16px 14px' }}
+            >
+              {/* 지역명 + 전년비 뱃지 */}
+              <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
+                <p className="text-[17px] font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                  {selectedSido}
                 </p>
-                <p className="text-[14px] font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                  {formatNumber(selectedStat.population)}명
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-medium" style={{ color: 'var(--color-text-secondary)', marginBottom: 2 }}>
-                  전년비
-                </p>
-                <p
-                  className="text-[14px] font-bold"
+                <span
+                  className="text-[12px] font-bold rounded-full"
                   style={{
-                    color:
-                      selectedStat.changeRate > 0
-                        ? 'var(--color-positive)'
-                        : selectedStat.changeRate < 0
-                          ? 'var(--color-negative)'
-                          : 'var(--color-neutral)',
+                    color: changeColor,
+                    backgroundColor: changeRate > 0
+                      ? 'var(--color-positive-light)'
+                      : changeRate < 0
+                        ? 'var(--color-negative-light)'
+                        : 'var(--color-surface)',
+                    padding: '3px 10px',
                   }}
                 >
-                  {selectedStat.changeRate > 0 ? '▲' : selectedStat.changeRate < 0 ? '▼' : '—'}{' '}
-                  {Math.abs(selectedStat.changeRate * 100).toFixed(2)}%
+                  {changeRate > 0 ? '▲' : changeRate < 0 ? '▼' : '—'}{' '}
+                  {Math.abs(changeRate * 100).toFixed(2)}%
+                </span>
+              </div>
+
+              {/* 인구 카운트업 */}
+              <div style={{ marginBottom: 14 }}>
+                <p className="text-[11px] font-medium" style={{ color: 'var(--color-text-secondary)', marginBottom: 2 }}>
+                  총인구 (전년비 기준)
+                </p>
+                <p
+                  className="text-[24px] font-extrabold"
+                  style={{
+                    color: 'var(--color-text-primary)',
+                    lineHeight: 1.1,
+                    letterSpacing: '-0.01em',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  <AnimatedNumber
+                    value={selectedStat.population}
+                    formatter={(n) => n.toLocaleString('ko-KR')}
+                    duration={0.7}
+                  />
+                  <span className="text-[14px] font-semibold" style={{ color: 'var(--color-text-secondary)', marginLeft: 3 }}>명</span>
                 </p>
               </div>
-            </div>
-            <p className="text-[11px]" style={{ color: 'var(--color-text-secondary)', marginTop: 8 }}>
-              탭을 한 번 더 누르면 순위 페이지로 이동합니다
-            </p>
-          </div>
-        ) : (
-          <p className="text-[13px]" style={{ color: 'var(--color-text-secondary)' }}>
-            시도를 탭하면 인구 현황을 확인할 수 있습니다
-          </p>
-        )}
+
+              {/* 순위 보기 버튼 */}
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+                onClick={() => router.push(`/ranking?sido=${encodeURIComponent(selectedSido)}`)}
+                style={{
+                  width: '100%',
+                  backgroundColor: 'var(--color-accent)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '11px 0',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                {selectedSido} 시군구 순위 보기
+              </motion.button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                padding: '18px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              {/* 핀 아이콘 pulse */}
+              <motion.div
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                style={{ flexShrink: 0 }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </motion.div>
+              <p className="text-[13px]" style={{ color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                시도를 탭하면<br />
+                <span style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>인구 현황과 시군구 순위</span>를 확인할 수 있어요
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* 범례 */}
-      <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
-        <div className="flex items-center gap-1.5">
-          <div style={{ width: 60, height: 8, borderRadius: 4, background: 'linear-gradient(to right, #dc2626, #fee2e2)' }} />
-          <span className="text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>감소</span>
+      <div
+        style={{
+          marginTop: 12,
+          padding: '10px 14px',
+          borderRadius: 10,
+          backgroundColor: 'var(--color-surface)',
+        }}
+      >
+        <div className="flex items-center gap-2">
+          {/* 감소 레이블 */}
+          <span className="text-[10px] font-semibold" style={{ color: '#dc2626', whiteSpace: 'nowrap' }}>
+            −2.5%↑
+          </span>
+          {/* 감소 그라디언트 */}
+          <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'linear-gradient(to right, #dc2626, #fee2e2)' }} />
+          {/* 중립 */}
+          <div style={{ width: 20, height: 8, borderRadius: 4, backgroundColor: '#e5e7eb', flexShrink: 0 }} />
+          <span className="text-[10px] font-medium" style={{ color: 'var(--color-text-secondary)', flexShrink: 0 }}>0</span>
+          <div style={{ width: 20, height: 8, borderRadius: 4, backgroundColor: '#e5e7eb', flexShrink: 0 }} />
+          {/* 증가 그라디언트 */}
+          <div style={{ flex: 1, height: 8, borderRadius: 4, background: 'linear-gradient(to right, #dbeafe, #1d4ed8)' }} />
+          {/* 증가 레이블 */}
+          <span className="text-[10px] font-semibold" style={{ color: '#1d4ed8', whiteSpace: 'nowrap' }}>
+            +2.5%↑
+          </span>
         </div>
-        <div
-          style={{
-            width: 32,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: '#e5e7eb',
-          }}
-        />
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>증가</span>
-          <div style={{ width: 60, height: 8, borderRadius: 4, background: 'linear-gradient(to right, #dbeafe, #1d4ed8)' }} />
-        </div>
+        <p className="text-[10px]" style={{ color: 'var(--color-text-secondary)', marginTop: 5, textAlign: 'center' }}>
+          전년 동월 대비 인구 변화율
+        </p>
       </div>
     </div>
   )
