@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
-import { AdSlot } from '@/components/ads/AdSlot'
 import { RankingClient, RankingHeader } from '@/components/ranking/RankingClient'
 import { getAllRegionRankings, getAvailableMonths } from '@/lib/data'
 
@@ -26,9 +25,6 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
         <div style={{ marginTop: 20 }}>
           <RankingHeader ym={latestYm} />
           <RankingClient entries={entries} sidos={sidos} ym={latestYm} initialSort={sort} initialSido={sido} />
-          <div style={{ marginTop: 20 }}>
-            <AdSlot />
-          </div>
         </div>
       </div>
     </MobileShell>

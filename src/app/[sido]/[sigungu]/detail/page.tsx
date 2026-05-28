@@ -4,7 +4,6 @@ import type { Metadata } from 'next'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
 import { DetailTabs } from '@/components/detail/DetailTabs'
-import { AdSlot } from '@/components/ads/AdSlot'
 import { MonthPicker } from '@/components/ui/MonthPicker'
 import { getRegionDetail, getRegionBySlug, getAvailableMonths } from '@/lib/data'
 
@@ -80,9 +79,6 @@ export default async function DetailPage({
           availableMonths={availableMonths}
         />
 
-        <div style={{ marginTop: 20 }}>
-          <AdSlot />
-        </div>
       </div>
     </MobileShell>
   )

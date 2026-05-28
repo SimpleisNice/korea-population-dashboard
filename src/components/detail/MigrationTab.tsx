@@ -19,6 +19,8 @@ import {
   AXIS_TICK,
   fmtYAxis,
   fmtXAxis,
+  ANIMATION_EASING,
+  ANIMATION_DURATION,
 } from '@/lib/chart-utils'
 
 interface Props {
@@ -142,8 +144,8 @@ function CumulativeChart({ data }: { data: CumulativePoint[] }) {
         <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="migGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  style={{ stopColor, stopOpacity: 0.15 }} />
-              <stop offset="95%" style={{ stopColor, stopOpacity: 0 }} />
+              <stop offset="0%"  style={{ stopColor, stopOpacity: 0.22 }} />
+              <stop offset="90%" style={{ stopColor, stopOpacity: 0 }} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -182,13 +184,14 @@ function CumulativeChart({ data }: { data: CumulativePoint[] }) {
             type="monotone"
             dataKey="cumulative"
             stroke={strokeColor}
-            strokeWidth={1.5}
+            strokeWidth={1.8}
             fill="url(#migGrad)"
             dot={false}
             activeDot={{ r: 4, fill: strokeColor, stroke: 'var(--color-bg)', strokeWidth: 2 }}
-            isAnimationActive={true}
-            animationDuration={900}
-            animationEasing="ease-out"
+            isAnimationActive
+            animationBegin={0}
+            animationDuration={ANIMATION_DURATION}
+            animationEasing={ANIMATION_EASING}
           />
         </AreaChart>
       </ResponsiveContainer>

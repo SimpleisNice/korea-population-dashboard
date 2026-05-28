@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { BarChart2 } from 'lucide-react'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
-import { AdSlot } from '@/components/ads/AdSlot'
 import { TrendingClient } from '@/components/trending/TrendingClient'
 import { getPopulationTrends, getAvailableMonths } from '@/lib/data'
 
@@ -44,9 +43,6 @@ export default function TrendingPage() {
       />
       <div style={{ padding: '16px 16px 32px' }}>
         <TrendingClient data={data} latestYm={latestYm} />
-        <div style={{ marginTop: 20 }}>
-          <AdSlot />
-        </div>
       </div>
     </MobileShell>
   )

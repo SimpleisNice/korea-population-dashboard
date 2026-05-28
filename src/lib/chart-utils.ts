@@ -2,6 +2,12 @@
  * 모든 차트 컴포넌트에서 공유하는 스타일 상수 및 포맷터.
  */
 
+// recharts animationEasing — AnimationTiming 타입이 좁게 정의되어 있어 any 캐스트 필요
+// runtime에서는 CSS animation-timing-function으로 그대로 전달되므로 정상 동작
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const ANIMATION_EASING: any = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+export const ANIMATION_DURATION = 850
+
 // ── 공통 Tooltip 스타일 ──────────────────────────────────────────────────────
 
 export const TOOLTIP_CONTENT_STYLE: React.CSSProperties = {

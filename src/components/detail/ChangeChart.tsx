@@ -19,6 +19,8 @@ import {
   AXIS_TICK,
   fmtYAxis,
   fmtXAxis,
+  ANIMATION_EASING,
+  ANIMATION_DURATION,
 } from '@/lib/chart-utils'
 
 interface Props {
@@ -68,9 +70,10 @@ export function ChangeChart({ data }: Props) {
           <Bar
             dataKey="change"
             radius={[3, 3, 0, 0]}
-            isAnimationActive={true}
-            animationDuration={800}
-            animationEasing="ease-out"
+            isAnimationActive
+            animationBegin={0}
+            animationDuration={ANIMATION_DURATION}
+            animationEasing={ANIMATION_EASING}
           >
             {chartData.map((point, i) => (
               <Cell

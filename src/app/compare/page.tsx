@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
 import { CompareClient } from '@/components/compare/CompareClient'
-import { AdSlot } from '@/components/ads/AdSlot'
 import { getAllRegions, getRegionDetail, getAvailableMonths } from '@/lib/data'
 
 export const metadata: Metadata = {
@@ -47,7 +46,6 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           />
         </Suspense>
 
-        {(initialA || initialB) && <AdSlot />}
       </div>
     </MobileShell>
   )

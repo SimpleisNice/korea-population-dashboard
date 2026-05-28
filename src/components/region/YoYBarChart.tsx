@@ -15,6 +15,8 @@ import {
   TOOLTIP_LABEL_STYLE,
   AXIS_TICK,
   fmtYAxis,
+  ANIMATION_EASING,
+  ANIMATION_DURATION,
 } from '@/lib/chart-utils'
 
 export interface YoYPoint {
@@ -124,7 +126,7 @@ export function YoYBarChart({ data, thisYearLabel, lastYearLabel }: Props) {
                 return [`${v.toLocaleString('ko-KR')}명`, lbl]
               }}
             />
-            {/* 올해 */}
+            {/* 올해 — 먼저 등장 */}
             <Bar
               dataKey="thisYear"
               fill={THIS_COLOR}
@@ -132,10 +134,11 @@ export function YoYBarChart({ data, thisYearLabel, lastYearLabel }: Props) {
               radius={[3, 3, 0, 0]}
               maxBarSize={30}
               isAnimationActive
-              animationDuration={800}
-              animationEasing="ease-out"
+              animationBegin={0}
+              animationDuration={ANIMATION_DURATION}
+              animationEasing={ANIMATION_EASING}
             />
-            {/* 작년 */}
+            {/* 작년 — 약간 딜레이 후 등장 */}
             <Bar
               dataKey="lastYear"
               fill={LAST_COLOR}
@@ -143,8 +146,9 @@ export function YoYBarChart({ data, thisYearLabel, lastYearLabel }: Props) {
               radius={[3, 3, 0, 0]}
               maxBarSize={30}
               isAnimationActive
-              animationDuration={800}
-              animationEasing="ease-out"
+              animationBegin={180}
+              animationDuration={ANIMATION_DURATION}
+              animationEasing={ANIMATION_EASING}
             />
           </BarChart>
         </ResponsiveContainer>

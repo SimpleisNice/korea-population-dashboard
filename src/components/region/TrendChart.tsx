@@ -21,6 +21,8 @@ import {
   AXIS_TICK,
   fmtYAxis,
   fmtXAxis,
+  ANIMATION_EASING,
+  ANIMATION_DURATION,
 } from '@/lib/chart-utils'
 
 interface ChartPoint {
@@ -65,8 +67,8 @@ export function TrendChart({
         >
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"  style={{ stopColor: color, stopOpacity: 0.16 }} />
-              <stop offset="85%" style={{ stopColor: color, stopOpacity: 0 }} />
+              <stop offset="0%"  style={{ stopColor: color, stopOpacity: 0.22 }} />
+              <stop offset="90%" style={{ stopColor: color, stopOpacity: 0 }} />
             </linearGradient>
           </defs>
 
@@ -130,9 +132,9 @@ export function TrendChart({
             dot={false}
             activeDot={false}
             connectNulls={false}
-            isAnimationActive={true}
-            animationDuration={900}
-            animationEasing="ease-out"
+            isAnimationActive
+            animationDuration={ANIMATION_DURATION}
+            animationEasing={ANIMATION_EASING}
           />
 
           {/* 실제 데이터 선 */}
@@ -140,13 +142,13 @@ export function TrendChart({
             type="monotone"
             dataKey="population"
             stroke={color}
-            strokeWidth={1.5}
+            strokeWidth={1.8}
             dot={false}
             activeDot={{ r: 4, fill: color, stroke: 'var(--color-bg)', strokeWidth: 2 }}
             connectNulls={false}
-            isAnimationActive={true}
-            animationDuration={900}
-            animationEasing="ease-out"
+            isAnimationActive
+            animationDuration={ANIMATION_DURATION}
+            animationEasing={ANIMATION_EASING}
           />
 
           {/* 예측 선 */}
@@ -157,11 +159,14 @@ export function TrendChart({
               stroke={color}
               strokeWidth={1.5}
               strokeDasharray="5 3"
-              strokeOpacity={0.4}
+              strokeOpacity={0.45}
               dot={false}
               activeDot={{ r: 3, fill: color, fillOpacity: 0.45 }}
               connectNulls={false}
-              isAnimationActive={false}
+              isAnimationActive
+              animationDuration={ANIMATION_DURATION + 200}
+              animationBegin={ANIMATION_DURATION - 100}
+              animationEasing={ANIMATION_EASING}
             />
           )}
         </ComposedChart>

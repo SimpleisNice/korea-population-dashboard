@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import type { Region, RegionDetail, AgeGroup } from "@/lib/types";
 import { fetchRegionDetail } from "@/lib/actions";
 import { formatNumber } from "@/lib/utils";
+import { ANIMATION_EASING, ANIMATION_DURATION } from "@/lib/chart-utils";
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as [number, number, number, number];
 
@@ -347,8 +348,8 @@ export function CompareClient({
                         v != null ? [formatNumber(v as number) + "명", ""] : ["", ""]
                       }
                     />
-                    <Line type="monotone" dataKey="a" stroke={COLOR_A} strokeWidth={2} dot={false} activeDot={{ r: 4 }} isAnimationActive animationDuration={800} animationEasing="ease-out" />
-                    <Line type="monotone" dataKey="b" stroke={COLOR_B} strokeWidth={2} dot={false} strokeDasharray="4 2" activeDot={{ r: 4 }} isAnimationActive animationDuration={900} animationEasing="ease-out" />
+                    <Line type="monotone" dataKey="a" stroke={COLOR_A} strokeWidth={1.8} dot={false} activeDot={{ r: 4 }} isAnimationActive animationBegin={0} animationDuration={ANIMATION_DURATION} animationEasing={ANIMATION_EASING} />
+                    <Line type="monotone" dataKey="b" stroke={COLOR_B} strokeWidth={1.8} dot={false} strokeDasharray="4 2" activeDot={{ r: 4 }} isAnimationActive animationBegin={150} animationDuration={ANIMATION_DURATION} animationEasing={ANIMATION_EASING} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

@@ -10,7 +10,6 @@ import { SexRatioCard } from '@/components/region/SexRatioCard'
 import { YoYBarChart } from '@/components/region/YoYBarChart'
 import { BookmarkButton } from '@/components/region/BookmarkButton'
 import { ShareButton } from '@/components/region/ShareButton'
-import { AdSlot } from '@/components/ads/AdSlot'
 import { MonthPicker } from '@/components/ui/MonthPicker'
 import { FadeIn } from '@/components/ui/FadeIn'
 import { TimePeriodCompare } from '@/components/region/TimePeriodCompare'
@@ -287,8 +286,6 @@ export default async function RegionPage({
           </Link>
         </FadeIn>
 
-        {/* 광고 */}
-        <AdSlot />
       </div>
     </MobileShell>
   )
