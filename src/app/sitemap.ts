@@ -12,6 +12,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${siteUrl}/ranking`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${siteUrl}/trending`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${siteUrl}/compare`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${siteUrl}/about`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${siteUrl}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
   ]
 
   const regionRoutes: MetadataRoute.Sitemap = regions.flatMap(r => {

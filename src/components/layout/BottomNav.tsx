@@ -66,7 +66,9 @@ const TABS = [
       !p.startsWith('/ranking') &&
       !p.startsWith('/trending') &&
       !p.startsWith('/compare') &&
-      !p.startsWith('/map'),
+      !p.startsWith('/map') &&
+      !p.startsWith('/privacy') &&
+      !p.startsWith('/about'),
   },
   { href: '/map',     label: '지도', Icon: MapIcon,     isActive: (p: string) => p.startsWith('/map') },
   { href: '/ranking', label: '순위', Icon: RankingIcon, isActive: (p: string) => p.startsWith('/ranking') || p.startsWith('/trending') },

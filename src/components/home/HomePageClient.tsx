@@ -6,6 +6,8 @@ import { NationalSummary } from '@/components/home/NationalSummary'
 import { PopularRegions } from '@/components/home/PopularRegions'
 import { FavoriteRegions } from '@/components/home/FavoriteRegions'
 import { RecentRegions } from '@/components/home/RecentRegions'
+import { AdSlot } from '@/components/AdSlot'
+import { Footer } from '@/components/layout/Footer'
 import type { Region, NationalSummary as NationalSummaryType } from '@/lib/types'
 
 interface RegionWithRate {
@@ -98,6 +100,51 @@ export function HomePageClient({
       {/* 최근 본 지역 */}
       <Section delay={0.22}>
         <RecentRegions />
+      </Section>
+
+      {/* 광고 */}
+      <Section delay={0.26} style={{ marginTop: 24 }}>
+        <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_BANNER ?? ''} format="auto" />
+      </Section>
+
+      {/* 서비스 안내 텍스트 */}
+      <Section delay={0.3} style={{ marginTop: 24 }}>
+        <div
+          className="rounded-xl"
+          style={{
+            backgroundColor: 'var(--color-bg)',
+            boxShadow: 'var(--shadow-card)',
+            padding: '20px',
+          }}
+        >
+          <h2
+            className="text-[14px] font-bold"
+            style={{ color: 'var(--color-text-primary)', marginBottom: 8 }}
+          >
+            인구 데이터로 보는 부동산 시장
+          </h2>
+          <p
+            className="text-[12px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 8 }}
+          >
+            인구 변화는 부동산 수요를 예측하는 가장 기본적인 지표입니다.
+            행정안전부가 매월 공개하는 주민등록 인구통계를 기반으로,
+            전국 226개 시군구의 인구 추이와 세대수 변화를 분석합니다.
+          </p>
+          <p
+            className="text-[12px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            인구 급증 지역은 신규 택지 개발, 기업 이전, 교통 인프라 확충 등의 영향을 받으며,
+            인구 급감 지역은 고령화, 일자리 감소 등 구조적 변화를 반영합니다.
+            지역별 인구 데이터를 통해 부동산 투자의 기초 자료로 활용해 보세요.
+          </p>
+        </div>
+      </Section>
+
+      {/* 푸터 */}
+      <Section delay={0.34}>
+        <Footer />
       </Section>
     </div>
   )

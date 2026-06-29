@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { CompareClient } from '@/components/compare/CompareClient'
 import { getAllRegions, getRegionDetail, getAvailableMonths } from '@/lib/data'
 
@@ -34,6 +35,15 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
       <Header title="지역 비교" showBack backHref="/" showSearch />
 
       <div className="px-4 py-5 space-y-5">
+        {/* 페이지 설명 */}
+        <p
+          className="text-[12px] leading-relaxed"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          관심 지역 두 곳을 선택하여 인구수, 세대수, 증감률을 나란히 비교해 보세요.
+          이사·투자 후보지를 객관적인 인구 데이터로 비교할 수 있습니다.
+        </p>
+
         <Suspense>
           <CompareClient
             regions={regions}
@@ -46,6 +56,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           />
         </Suspense>
 
+        <Footer />
       </div>
     </MobileShell>
   )
