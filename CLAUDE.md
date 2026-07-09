@@ -46,7 +46,7 @@ Regions use 10-digit MOIS codes. Top-level 시도 (17 provinces) have codes endi
 - **URL state via `nuqs` / searchParams** — not React state or Context; filters survive refresh and are shareable
 - **Light, mobile-only UI** — no dark mode, no desktop layout by design (see `src/app/globals.css` `@theme` tokens). Max content width is 430px (`--max-w`) via `MobileShell`; there is no separate desktop component tree
 - **Bottom nav, not sidebar** — `BottomNav` (`src/components/layout/BottomNav.tsx`) provides 4 tabs: 홈 / 지도 / 순위 (트렌딩 포함) / 비교
-- **AdSense is live** — `src/components/AdSlot.tsx` pushes to `window.adsbygoogle` on mount; the publisher ID (`ca-pub-4466379680692265`) is a real, approved ID hardcoded in the component and in `src/app/layout.tsx` and `public/ads.txt`. Only the per-slot ID (`NEXT_PUBLIC_ADSENSE_SLOT_BANNER`) is env-configured
+- **AdSense is live** — `src/components/AdSlot.tsx` pushes to `window.adsbygoogle` on mount; the publisher ID (`ca-pub-4466379680692265`) is a real, approved ID hardcoded in the component and in `src/app/layout.tsx` and `public/ads.txt`. Only the per-slot ID (`NEXT_PUBLIC_ADSENSE_SLOT_BANNER`) is env-configured. `AdSlot` returns `null` (renders no ad unit) when `slot` is empty or `enabled={false}` — never place an ad on an empty/loading/navigation screen. Ad units live only on the home/ranking/trending content pages, below the content. **Keep Auto Ads OFF in the AdSense dashboard**: `adsbygoogle.js` loads on every page (`layout.tsx` head), so Auto Ads would auto-inject ads onto thin screens (map, empty compare) and re-trigger the "게시자 콘텐츠가 없는 화면" policy violation this setup was fixed to avoid
 
 ## Docs
 
