@@ -13,7 +13,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { CompareSearch } from "./CompareSearch";
-import { AgeChart } from "@/components/detail/AgeChart";
+import { AgeStructureCompareChart } from "./AgeStructureCompareChart";
 import { MonthPicker } from "@/components/ui/MonthPicker";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { Region, RegionDetail, AgeGroup } from "@/lib/types";
@@ -368,21 +368,9 @@ export function CompareClient({
                   className="rounded-xl p-4"
                   style={{ backgroundColor: "var(--color-bg)", boxShadow: "var(--shadow-card)" }}
                 >
-                  <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-                    <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                      연령 구조 비교
-                    </p>
-                    <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--color-text-secondary)" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: "var(--color-accent)", display: "inline-block" }} />
-                        {regionA!.sigungu}
-                      </span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: "var(--color-accent)", opacity: 0.3, display: "inline-block" }} />
-                        {regionB!.sigungu}
-                      </span>
-                    </div>
-                  </div>
+                  <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)", marginBottom: 12 }}>
+                    연령 구조 비교
+                  </p>
 
                   {idxA !== null && idxB !== null && (
                     <div
@@ -417,7 +405,14 @@ export function CompareClient({
                     </div>
                   )}
 
-                  <AgeChart data={detailA!.ageGroups} compareData={detailB!.ageGroups} />
+                  <AgeStructureCompareChart
+                    a={detailA!.ageGroups}
+                    b={detailB!.ageGroups}
+                    labelA={regionA!.sigungu}
+                    labelB={regionB!.sigungu}
+                    colorA={COLOR_A}
+                    colorB={COLOR_B}
+                  />
                 </motion.div>
               );
             })()}

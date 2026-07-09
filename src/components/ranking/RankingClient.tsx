@@ -130,35 +130,49 @@ export function RankingClient({ entries, sidos, ym, initialSort, initialSido }: 
       </div>
 
       {/* ── 시도 필터 (pill chips) ── */}
-      <div
-        className="no-scrollbar"
-        style={{ display: 'flex', gap: 5, overflowX: 'auto', marginBottom: 16, paddingBottom: 2 }}
-      >
-        {['전체', ...sidos].map(s => {
-          const active = sidoFilter === s
-          const label = s === '전체' ? '전체' : shortenSido(s)
-          return (
-            <motion.button
-              key={s}
-              whileTap={{ scale: 0.93 }}
-              onClick={() => setParam('sido', s)}
-              style={{
-                flexShrink: 0,
-                padding: '5px 12px',
-                borderRadius: 16,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: active ? '1px solid transparent' : '1px solid var(--color-border)',
-                backgroundColor: active ? 'var(--color-accent-light)' : 'transparent',
-                color: active ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                transition: 'background-color 0.15s, color 0.15s',
-              }}
-            >
-              {label}
-            </motion.button>
-          )
-        })}
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <div
+          className="no-scrollbar"
+          style={{ display: 'flex', gap: 5, overflowX: 'auto', paddingBottom: 2 }}
+        >
+          {['전체', ...sidos].map(s => {
+            const active = sidoFilter === s
+            const label = s === '전체' ? '전체' : shortenSido(s)
+            return (
+              <motion.button
+                key={s}
+                whileTap={{ scale: 0.93 }}
+                onClick={() => setParam('sido', s)}
+                style={{
+                  flexShrink: 0,
+                  padding: '5px 12px',
+                  borderRadius: 16,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: active ? '1px solid transparent' : '1px solid var(--color-border)',
+                  backgroundColor: active ? 'var(--color-accent-light)' : 'transparent',
+                  color: active ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                  transition: 'background-color 0.15s, color 0.15s',
+                }}
+              >
+                {label}
+              </motion.button>
+            )
+          })}
+        </div>
+        {/* 가로 스크롤 가능함을 알리는 우측 페이드 힌트 */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 2,
+            width: 28,
+            pointerEvents: 'none',
+            background: 'linear-gradient(to right, transparent, var(--color-surface))',
+          }}
+        />
       </div>
 
       <p className="text-[12px]" style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}>
@@ -279,14 +293,9 @@ export function RankingClient({ entries, sidos, ym, initialSort, initialSido }: 
 export function RankingHeader({ ym }: { ym: string }) {
   return (
     <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-      <div>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-          지역 순위
-        </h1>
-        <p className="text-[13px]" style={{ color: 'var(--color-text-secondary)', marginTop: 2 }}>
-          {formatYM(ym)} 기준
-        </p>
-      </div>
+      <p className="text-[13px] font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
+        {formatYM(ym)} 기준
+      </p>
       <Link
         href="/trending"
         className="flex items-center gap-1.5 rounded-full text-[13px] font-semibold"

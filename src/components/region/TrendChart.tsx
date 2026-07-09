@@ -58,6 +58,17 @@ export function TrendChart({
 
   const gradId = `tg_${color.replace(/[^a-z0-9]/gi, '_')}`
 
+  // 인구·세대수는 월별 변화폭이 전체 값 대비 매우 작아(대개 1% 미만),
+  // Y축을 0부터 그리면 실제 증감이 평평한 선으로 뭉개진다.
+  // 데이터 최소·최댓값 주변으로 여유를 둔 도메인을 계산해 변화가 보이게 한다.
+  const values = combined
+    .flatMap(p => [p.population, p.forecast])
+    .filter((v): v is number => v != null)
+  const dataMin = values.length > 0 ? Math.min(...values) : 0
+  const dataMax = values.length > 0 ? Math.max(...values) : 0
+  const pad = Math.max((dataMax - dataMin) * 0.15, dataMax * 0.005, 1)
+  const yDomain: [number, number] = [Math.max(0, Math.floor(dataMin - pad)), Math.ceil(dataMax + pad)]
+
   return (
     <div style={{ height, width: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -88,6 +99,7 @@ export function TrendChart({
             tickFormatter={fmtXAxis}
           />
           <YAxis
+            domain={yDomain}
             tick={AXIS_TICK}
             tickLine={false}
             axisLine={false}

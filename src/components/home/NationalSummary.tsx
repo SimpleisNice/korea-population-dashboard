@@ -115,7 +115,7 @@ export function NationalSummary({ summary }: Props) {
             }}
           >
             <TrendingUp size={11} />
-            급증·급감 지역
+            기간별 트렌드
           </Link>
         </motion.div>
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
