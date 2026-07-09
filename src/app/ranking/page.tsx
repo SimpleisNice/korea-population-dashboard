@@ -65,10 +65,11 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             className="text-[12px] leading-relaxed"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            인구 순위는 부동산 시장 분석의 기초 자료입니다.
-            인구가 많은 지역은 상권이 활발하고 생활 인프라가 풍부하며,
-            인구 증가 추세인 지역은 향후 개발 호재와 부동산 가치 상승이 기대됩니다.
-            반대로 인구 감소가 지속되는 지역은 공실 리스크와 자산 가치 하락에 유의해야 합니다.
+            순위는 세 가지 기준으로 다르게 읽어야 합니다. <strong>총인구</strong> 정렬은
+            상권 규모와 생활 인프라의 절대적인 크기를, <strong>전월 증감</strong>은 단기적인
+            유입·유출 흐름을, <strong>전년 증감률</strong>은 계절 요인을 제거한 구조적 성장세를
+            보여줍니다. 규모가 작은 지역은 증감률이 크게 흔들리므로 절대 증감량과 함께 보고,
+            시도 필터로 같은 권역 안에서 비교하면 지역 특성이 더 선명하게 드러납니다.
           </p>
         </div>
 

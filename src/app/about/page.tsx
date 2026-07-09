@@ -153,11 +153,18 @@ export default function AboutPage() {
           </p>
           <p
             className="text-[13px] leading-relaxed"
-            style={{ color: 'var(--color-text-secondary)' }}
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 10 }}
           >
             본 서비스의 데이터는 개인을 식별할 수 없는 지역 단위 집계 데이터이며,
             통계 분석 및 시각화 목적으로만 활용됩니다.
           </p>
+          <Link
+            href="/methodology"
+            className="text-[13px] font-medium"
+            style={{ color: 'var(--color-accent)' }}
+          >
+            데이터 집계 방식과 지표 정의 자세히 보기 →
+          </Link>
         </div>
 
         {/* 면책 조항 */}

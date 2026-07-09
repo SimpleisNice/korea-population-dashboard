@@ -17,6 +17,13 @@ export function Footer() {
           서비스 소개
         </Link>
         <Link
+          href="/methodology"
+          className="text-[11px]"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          데이터 방법론
+        </Link>
+        <Link
           href="/privacy"
           className="text-[11px]"
           style={{ color: 'var(--color-text-secondary)' }}

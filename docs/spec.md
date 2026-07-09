@@ -246,6 +246,14 @@
 
 ---
 
+### 2-10. 데이터 방법론 `/methodology`
+
+**목적:** AdSense "저품질 콘텐츠" 대응 — 데이터 수집·집계 방식과 지표 정의를 설명하는 고유 콘텐츠 페이지. (from/back: `/about`, Footer·About에서 링크)
+
+**구성:** 데이터 출처와 갱신 주기, 집계 단위(226개 시군구)와 행정경계 변경 처리(레거시 코드 병합), 지표 정의(총인구·세대수·세대당 인구·전월 증감·전년 동기 증감률(YoY)·성비·연령 구조), 해석 가이드.
+
+---
+
 ## 3. 공통 컴포넌트
 
 ### 레이아웃 (`src/components/layout/`)
@@ -281,7 +289,9 @@
 
 ### 광고 (`src/components/AdSlot.tsx`)
 
-`AdSlot` — Google AdSense 광고 슬롯. `slot`, `format`, `style`, `className` props. `adsbygoogle.push()`를 컴포넌트 마운트 시 1회 호출. 퍼블리셔 ID는 실 운영 ID(`ca-pub-4466379680692265`)로 하드코딩되어 있고, 슬롯 ID는 `NEXT_PUBLIC_ADSENSE_SLOT_BANNER` 환경변수로 주입.
+`AdSlot` — Google AdSense 광고 슬롯. `slot`, `format`, `style`, `className`, `enabled`(기본 true) props. `slot`이 비었거나 `enabled=false`면 `null`을 반환해 광고 유닛을 아예 렌더하지 않는다(빈 슬롯·콘텐츠 없는 화면에 광고를 노출하는 AdSense 정책 위반 방지). 활성 상태에서만 `adsbygoogle.push()`를 1회 호출하고 "광고" 라벨을 함께 표시. 퍼블리셔 ID는 실 운영 ID(`ca-pub-4466379680692265`)로 하드코딩, 슬롯 ID는 `NEXT_PUBLIC_ADSENSE_SLOT_BANNER` 환경변수로 주입. 현재 홈·순위·트렌딩 3개 콘텐츠 페이지의 콘텐츠 하단에만 배치.
+
+**AdSense 정책 주의:** 계정에서 **자동 광고(Auto Ads)를 반드시 OFF**로 유지해야 한다. `adsbygoogle.js`는 전 페이지(`layout.tsx` head)에 로드되므로, 자동 광고가 켜지면 지도·비교 빈 상태 등 콘텐츠가 얇은 화면에도 광고가 자동 삽입되어 "게시자 콘텐츠가 없는 화면" 위반이 발생한다.
 
 ---
 

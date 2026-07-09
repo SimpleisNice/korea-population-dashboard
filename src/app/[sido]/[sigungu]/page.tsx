@@ -233,6 +233,21 @@ export default async function RegionPage({
           />
         </FadeIn>
 
+        {/* 지역 분석 (수치 기반 고유 서술) */}
+        <FadeIn delay={0.21}>
+          <RegionAnalysis
+            sigunguName={sigunguName}
+            sidoName={sidoName}
+            ym={currentMonth}
+            population={latest.population}
+            yoyPopChange={yoyPopChange}
+            householdSize={latest.householdSize}
+            male={latest.male}
+            female={latest.female}
+            rank={rank}
+          />
+        </FadeIn>
+
         {/* 인구 추이 차트 (전년 동기 비교) */}
         <FadeIn delay={0.24}>
           <div
@@ -288,6 +303,153 @@ export default async function RegionPage({
 
       </div>
     </MobileShell>
+  )
+}
+
+// ── 지역 분석 (수치 기반 고유 서술) ────────────────────────────────────────────
+// 각 시군구의 실제 인구·증감·가구·성비 수치에서 파생되는 분석 문단을 생성한다.
+// 지역마다 값이 달라 페이지별 고유 콘텐츠가 된다.
+
+function scaleLabel(pop: number): string {
+  if (pop >= 500_000) return '대도시급'
+  if (pop >= 200_000) return '중견 도시'
+  if (pop >= 100_000) return '중소 도시'
+  if (pop >= 50_000) return '소규모 도시'
+  return '인구 소멸 대응이 필요한 소규모 지역'
+}
+
+function buildRegionNarrative({
+  sigunguName,
+  sidoName,
+  ym,
+  population,
+  yoyPopChange,
+  householdSize,
+  male,
+  female,
+  rank,
+}: {
+  sigunguName: string
+  sidoName: string
+  ym: string
+  population: number
+  yoyPopChange: number | undefined
+  householdSize: number
+  male: number
+  female: number
+  rank: RegionRankProp | null
+}): string[] {
+  const label = `${ym.slice(0, 4)}년 ${parseInt(ym.slice(4))}월`
+  const sentences: string[] = []
+
+  // 1) 규모와 순위
+  const scale = scaleLabel(population)
+  const rankText = rank
+    ? ` ${sidoName} 내 ${rank.sidoRank}위, 전국 ${rank.nationalTotal}개 시군구 중 ${rank.nationalRank}위 규모입니다.`
+    : '.'
+  sentences.push(
+    `${sigunguName}은(는) ${label} 기준 주민등록 인구 ${population.toLocaleString('ko-KR')}명으로 ${scale}에 해당하며,${rankText}`,
+  )
+
+  // 2) 1년간 추세
+  const yoyRate =
+    yoyPopChange != null && population - yoyPopChange !== 0
+      ? (yoyPopChange / (population - yoyPopChange)) * 100
+      : null
+  if (yoyRate !== null) {
+    const abs = Math.abs(yoyRate).toFixed(2)
+    if (yoyRate >= 1) {
+      sentences.push(
+        `최근 1년간 인구가 ${abs}% 늘며 뚜렷한 성장세를 보였습니다. 신규 주택 공급이나 일자리 유입이 뒷받침될 경우 주거 수요와 상권 확대가 이어질 가능성이 높은 구간입니다.`,
+      )
+    } else if (yoyRate > 0) {
+      sentences.push(
+        `최근 1년간 인구가 ${abs}% 소폭 증가하며 안정적인 흐름을 유지하고 있습니다. 급격한 변동보다는 완만한 수요가 예상되는 지역입니다.`,
+      )
+    } else if (yoyRate > -1) {
+      sentences.push(
+        `최근 1년간 인구가 ${abs}% 소폭 감소해 정체 국면에 있습니다. 세대수·연령 구조 변화를 함께 살펴 실수요 흐름을 확인할 필요가 있습니다.`,
+      )
+    } else {
+      sentences.push(
+        `최근 1년간 인구가 ${abs}% 줄며 감소세가 이어졌습니다. 부동산 수요 위축과 공실 리스크 가능성을 함께 고려해야 하는 구간입니다.`,
+      )
+    }
+  }
+
+  // 3) 가구 구성과 성비
+  const hh = householdSize.toFixed(2)
+  let hhText: string
+  if (householdSize >= 2.4) {
+    hhText = `세대당 인구는 ${hh}명으로 가구 규모가 큰 편이라 가족 단위 거주 비중이 높게 나타납니다.`
+  } else if (householdSize >= 2.0) {
+    hhText = `세대당 인구는 ${hh}명으로 전국 평균 수준의 가구 구성을 보입니다.`
+  } else {
+    hhText = `세대당 인구는 ${hh}명으로 1~2인 가구 비중이 높아 소형 주거 수요가 두드러집니다.`
+  }
+  const ratio = female > 0 ? (male / female) * 100 : null
+  if (ratio !== null) {
+    const sexText =
+      ratio >= 102
+        ? ' 성비는 남성이 다소 많은 편입니다.'
+        : ratio <= 98
+          ? ' 성비는 여성이 다소 많은 편입니다.'
+          : ' 성비는 균형에 가깝습니다.'
+    hhText += sexText
+  }
+  sentences.push(hhText)
+
+  return sentences
+}
+
+interface RegionRankProp {
+  nationalRank: number
+  nationalTotal: number
+  sidoRank: number
+  sidoTotal: number
+}
+
+function RegionAnalysis(props: {
+  sigunguName: string
+  sidoName: string
+  ym: string
+  population: number
+  yoyPopChange: number | undefined
+  householdSize: number
+  male: number
+  female: number
+  rank: RegionRankProp | null
+}) {
+  const sentences = buildRegionNarrative(props)
+
+  return (
+    <div
+      className="rounded-xl"
+      style={{
+        backgroundColor: 'var(--color-bg)',
+        boxShadow: 'var(--shadow-card)',
+        marginBottom: 20,
+        padding: '20px',
+      }}
+    >
+      <h2
+        className="text-[15px] font-bold"
+        style={{ color: 'var(--color-text-primary)', marginBottom: 10 }}
+      >
+        {props.sigunguName} 인구 분석
+      </h2>
+      <div className="space-y-2.5">
+        {sentences.map((s, i) => (
+          <p
+            key={i}
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            {s}
+          </p>
+        ))}
+      </div>
+    </div>
   )
 }
 
