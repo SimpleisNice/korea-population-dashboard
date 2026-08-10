@@ -48,13 +48,24 @@ function loadIndex(): Region[] {
   return indexCache
 }
 
-// 지역 JSON에서 targetYm 이하의 가장 최근 월을 반환 (데이터 불연속 대응)
-function latestAvailable(regionMonths: string[], upTo: string): string | null {
-  return regionMonths.filter(m => m <= upTo).at(-1) ?? null
+// ── 집계 대상 셀렉터 ──────────────────────────────────────────────────────────
+// 전국·시도 합계와 순위는 반드시 최상위 시군구(level === 'sigungu')만 사용한다.
+// 일반구(수원시 장안구 등)는 부모 시에 이미 포함되어 있어, 함께 더하면 이중 계상된다.
+// 필터링은 여기 한 곳에서만 정의한다 — 각 함수가 개별로 거르면 다음에 또 어긋난다.
+// docs/principles.md A1 참고.
+
+let topLevelCache: Region[] | null = null
+
+export function getTopLevelRegions(): Region[] {
+  if (topLevelCache) return topLevelCache
+  topLevelCache = loadIndex().filter(r => r.level === 'sigungu')
+  return topLevelCache
 }
 
 // ── public API ────────────────────────────────────────────────────────────────
 
+// 검색·비교 등 "지역을 고르는" 용도. 일반구를 포함한 전체 목록이다.
+// 합계·순위에는 쓰지 말 것 — getTopLevelRegions() 를 쓴다.
 export function getAllRegions(): Region[] {
   return loadIndex()
 }
@@ -72,7 +83,7 @@ export function getPopularRegions(): { code: string; rate: number }[] {
 
   const endYm = months[months.length - 1]
   const startYm = months[months.length - 13]
-  const regions = loadIndex()
+  const regions = getTopLevelRegions()
 
   const ranked = regions
     .map(r => {
@@ -102,6 +113,45 @@ export function getPopularRegions(): { code: string; rate: number }[] {
 
 export function getRegionBySlug(sido: string, sigungu: string): Region | null {
   return loadIndex().find(r => r.sido === sido && r.sigungu === sigungu) ?? null
+}
+
+export interface ChildDistrict {
+  region: Region
+  population: number
+  yoyChange: number | null
+}
+
+/**
+ * 부모 시에 속한 일반구 목록. 일반구는 합계·순위에서 제외되므로,
+ * 부모 시 상세 페이지가 이들에 도달하는 유일한 경로다.
+ * 일반구가 없는 지역(대부분)은 빈 배열을 반환한다.
+ */
+export function getChildDistricts(parent: Region, ym: string): ChildDistrict[] {
+  if (parent.level !== 'sigungu') return []
+
+  const prefix = `${parent.code.slice(0, 4)}`
+  const namePrefix = `${parent.sigungu} `
+
+  return loadIndex()
+    .filter(r =>
+      r.level === 'district' &&
+      r.code.startsWith(prefix) &&
+      r.sigungu.startsWith(namePrefix),
+    )
+    .flatMap(r => {
+      const months = readRegionJSON(r.code)?.months
+      const stats = months?.[ym]
+      if (!stats) return []
+      const ymIdx = getAvailableMonths().indexOf(ym)
+      const yoyYm = ymIdx >= 12 ? getAvailableMonths()[ymIdx - 12] : null
+      const yoyStats = yoyYm ? months?.[yoyYm] ?? null : null
+      return [{
+        region: r,
+        population: stats.population,
+        yoyChange: yoyStats ? stats.population - yoyStats.population : null,
+      }]
+    })
+    .sort((a, b) => b.population - a.population)
 }
 
 export function getAvailableMonths(): string[] {
@@ -181,13 +231,11 @@ const rankCache = new Map<string, Map<string, RegionRank>>()
 function buildRankings(ym: string): Map<string, RegionRank> {
   if (rankCache.has(ym)) return rankCache.get(ym)!
 
-  const regions = loadIndex()
-  const withPop = regions.map(r => {
-    const json = readRegionJSON(r.code)
-    if (!json) return { code: r.code, sido: r.sido, population: 0 }
-    const regionMonths = Object.keys(json.months).sort()
-    const availYm = latestAvailable(regionMonths, ym)
-    return { code: r.code, sido: r.sido, population: availYm ? (json.months[availYm]?.population ?? 0) : 0 }
+  // 기준월 데이터가 실제로 있는 최상위 시군구만 순위 대상이다.
+  // 과거 값으로 폴백하면 화면의 기준월 표기와 데이터 시점이 어긋난다 (docs/principles.md A4-1).
+  const withPop = getTopLevelRegions().flatMap(r => {
+    const stats = readRegionJSON(r.code)?.months[ym]
+    return stats ? [{ code: r.code, sido: r.sido, population: stats.population }] : []
   })
 
   const sorted = [...withPop].sort((a, b) => b.population - a.population)
@@ -224,7 +272,7 @@ export function getRegionRank(code: string, ym: string): RegionRank | null {
 }
 
 export function getAllRegionRankings(ym: string): RegionRankEntry[] {
-  const regions = loadIndex()
+  const regions = getTopLevelRegions()
   const months = getAvailableMonths()
   const ymIdx = months.indexOf(ym)
   const prevYm = ymIdx > 0 ? months[ymIdx - 1] : null
@@ -235,15 +283,11 @@ export function getAllRegionRankings(ym: string): RegionRankEntry[] {
   for (const r of regions) {
     const json = readRegionJSON(r.code)
     if (!json) continue
-    const regionMonths = Object.keys(json.months).sort()
-    const regionYm = latestAvailable(regionMonths, ym)
-    if (!regionYm) continue
-    const stats = json.months[regionYm]
+    // 기준월 데이터가 없으면 순위에서 제외한다 (폴백 금지 — buildRankings 와 동일 규칙)
+    const stats = json.months[ym]
     if (!stats) continue
-    const prevRegionYm = prevYm ? latestAvailable(regionMonths, prevYm) : null
-    const yoyRegionYm = yoyYm ? latestAvailable(regionMonths, yoyYm) : null
-    const prevStats = prevRegionYm ? json.months[prevRegionYm] ?? null : null
-    const yoyStats = yoyRegionYm ? json.months[yoyRegionYm] ?? null : null
+    const prevStats = prevYm ? json.months[prevYm] ?? null : null
+    const yoyStats = yoyYm ? json.months[yoyYm] ?? null : null
     const rank = rankings.get(r.code)
     if (!rank) continue
 
@@ -276,7 +320,7 @@ export function getPopulationTrends(periodMonths: 3 | 6 | 12): { gainers: TrendE
 
   const endYm = months[months.length - 1]
   const startYm = months[months.length - 1 - periodMonths]
-  const regions = loadIndex()
+  const regions = getTopLevelRegions()
   const entries: TrendEntry[] = []
 
   for (const r of regions) {
@@ -315,7 +359,7 @@ export function getDecliningRegions(): { code: string; rate: number }[] {
 
   const endYm = months[months.length - 1]
   const startYm = months[months.length - 13]
-  const regions = loadIndex()
+  const regions = getTopLevelRegions()
 
   const ranked = regions
     .map(r => {
@@ -351,7 +395,7 @@ export function getAgingRegions(): { code: string; rate: number }[] {
   const months = getAvailableMonths()
   if (months.length === 0) return []
   const latestYm = months[months.length - 1]
-  const regions = loadIndex()
+  const regions = getTopLevelRegions()
 
   const ELDERLY = ['60–69', '70–79', '80+']
   const YOUTH = ['0–9', '10–19']
@@ -402,34 +446,34 @@ export function getSidoStats(): SidoStat[] {
   if (sidoStatsCache) return sidoStatsCache
 
   const months = getAvailableMonths()
-  const regions = loadIndex()
+  const regions = getTopLevelRegions()
   if (months.length === 0) return []
 
   const endYm = months[months.length - 1]
   const startYm = months.length >= 13 ? months[months.length - 13] : months[0]
 
-  const sidoMap = new Map<string, { pop: number; prevPop: number }>()
+  // pop 은 기준월 총인구, cmpEnd/cmpStart 는 변화율 계산용이다.
+  // 두 시점을 모두 가진 지역만 변화율 분모·분자에 넣어야 비교 기준이 일치한다.
+  const sidoMap = new Map<string, { pop: number; cmpEnd: number; cmpStart: number }>()
 
   for (const r of regions) {
     const json = readRegionJSON(r.code)
-    if (!json) continue
-    const regionMonths = Object.keys(json.months).sort()
-    const regionEndYm = latestAvailable(regionMonths, endYm)
-    if (!regionEndYm) continue
-    const end = json.months[regionEndYm]
-    if (!end) continue
-    const regionStartYm = latestAvailable(regionMonths, startYm)
-    const start = regionStartYm ? json.months[regionStartYm] : null
-    const acc = sidoMap.get(r.sido) ?? { pop: 0, prevPop: 0 }
+    const end = json?.months[endYm]
+    if (!json || !end) continue
+    const start = json.months[startYm] ?? null
+    const acc = sidoMap.get(r.sido) ?? { pop: 0, cmpEnd: 0, cmpStart: 0 }
     acc.pop += end.population
-    if (start) acc.prevPop += start.population
+    if (start) {
+      acc.cmpEnd += end.population
+      acc.cmpStart += start.population
+    }
     sidoMap.set(r.sido, acc)
   }
 
-  sidoStatsCache = Array.from(sidoMap.entries()).map(([sido, { pop, prevPop }]) => ({
+  sidoStatsCache = Array.from(sidoMap.entries()).map(([sido, { pop, cmpEnd, cmpStart }]) => ({
     sido,
     population: pop,
-    changeRate: prevPop > 0 ? (pop - prevPop) / prevPop : 0,
+    changeRate: cmpStart > 0 ? (cmpEnd - cmpStart) / cmpStart : 0,
   }))
   return sidoStatsCache
 }
@@ -447,7 +491,7 @@ export function getNationalSummary(): NationalSummary | null {
   const latestYm = months[months.length - 1]
   const prevYm = months.length >= 2 ? months[months.length - 2] : null
 
-  const regions = loadIndex()
+  const regions = getTopLevelRegions()
   let totalPop = 0
   let prevTotalPop = 0
 

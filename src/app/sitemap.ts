@@ -1,7 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getAllRegions } from '@/lib/data'
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://example.com'
+import { SITE_URL as siteUrl } from '@/lib/site'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const regions = getAllRegions()

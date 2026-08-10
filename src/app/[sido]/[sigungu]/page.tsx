@@ -13,7 +13,10 @@ import { ShareButton } from '@/components/region/ShareButton'
 import { MonthPicker } from '@/components/ui/MonthPicker'
 import { FadeIn } from '@/components/ui/FadeIn'
 import { TimePeriodCompare } from '@/components/region/TimePeriodCompare'
-import { getRegionDetail, getRegionBySlug, getAvailableMonths, getRegionRank, getMonthStats } from '@/lib/data'
+import { getRegionDetail, getRegionBySlug, getAvailableMonths, getRegionRank, getMonthStats, getChildDistricts } from '@/lib/data'
+import type { ChildDistrict } from '@/lib/data'
+import { regionPath } from '@/lib/utils'
+import { SITE_URL } from '@/lib/site'
 
 interface Params {
   sido: string
@@ -28,8 +31,6 @@ interface SearchParams {
 function formatYM(ym: string) {
   return `${ym.slice(0, 4)}년 ${parseInt(ym.slice(4))}월`
 }
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://korea-population-dashboard.vercel.app'
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { sido, sigungu } = await params
@@ -107,6 +108,8 @@ export default async function RegionPage({
   const yoyHhSizeChange = yoyMonth ? parseFloat((latest.householdSize - yoyMonth.householdSize).toFixed(2)) : undefined
 
   const rank = getRegionRank(region.code, currentMonth)
+  // 일반구는 순위·합계에서 제외되므로, 부모 시 상세가 이들에 도달하는 유일한 경로다
+  const childDistricts = getChildDistricts(region, currentMonth)
 
   // ── YoY 막대 차트 데이터 (올해 3개월 vs 작년 동기 3개월) ──────────────────
   const curIdx = availableMonths.indexOf(currentMonth)
@@ -271,6 +274,17 @@ export default async function RegionPage({
           </div>
         </FadeIn>
 
+        {/* 구별 현황 (일반구가 있는 시에만 노출) */}
+        {childDistricts.length > 0 && (
+          <FadeIn delay={0.26}>
+            <ChildDistrictList
+              parentName={sigunguName}
+              districts={childDistricts}
+              ym={currentMonth}
+            />
+          </FadeIn>
+        )}
+
         {/* 시점 비교 */}
         <FadeIn delay={0.28}>
           <Suspense>
@@ -303,6 +317,84 @@ export default async function RegionPage({
 
       </div>
     </MobileShell>
+  )
+}
+
+// ── 구별 현황 ─────────────────────────────────────────────────────────────────
+// 일반구(수원시 장안구 등)는 부모 시에 이미 포함되어 있어 전국 합계·순위에서 제외된다.
+// 대신 부모 시 상세에서 구 단위로 내려갈 수 있게 한다 — docs/principles.md 0-2.
+
+function ChildDistrictList({
+  parentName,
+  districts,
+  ym,
+}: {
+  parentName: string
+  districts: ChildDistrict[]
+  ym: string
+}) {
+  return (
+    <div
+      className="rounded-xl"
+      style={{
+        backgroundColor: 'var(--color-bg)',
+        boxShadow: 'var(--shadow-card)',
+        marginBottom: 20,
+        padding: '20px 20px 8px',
+      }}
+    >
+      <div className="flex items-baseline justify-between" style={{ marginBottom: 4 }}>
+        <h2 className="text-[15px] font-bold" style={{ color: 'var(--color-text-primary)' }}>
+          {parentName} 구별 현황
+        </h2>
+        <span style={{ fontSize: 11, color: 'var(--color-text-secondary)', opacity: 0.7 }}>
+          {districts.length}개 구
+        </span>
+      </div>
+      <p
+        className="text-[12px] leading-relaxed"
+        style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
+      >
+        구별 인구는 {parentName} 합계에 이미 포함되어 있어 전국 순위에는 집계하지 않습니다.
+      </p>
+
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        {districts.map(({ region, population, yoyChange }) => {
+          const districtName = region.sigungu.slice(parentName.length).trim()
+          const color =
+            yoyChange == null || yoyChange === 0 ? 'var(--color-neutral)'
+              : yoyChange > 0 ? 'var(--color-positive)'
+                : 'var(--color-negative)'
+          return (
+            <li key={region.code} style={{ borderTop: '1px solid var(--color-border)' }}>
+              <Link
+                href={`${regionPath(region.sido, region.sigungu)}?ym=${ym}`}
+                className="flex items-center justify-between"
+                style={{ padding: '12px 0', textDecoration: 'none' }}
+              >
+                <span
+                  className="text-[14px] font-semibold"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  {districtName}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-[14px]" style={{ color: 'var(--color-text-primary)' }}>
+                    {population.toLocaleString('ko-KR')}명
+                  </span>
+                  {yoyChange != null && (
+                    <span className="text-[12px] font-semibold" style={{ color, minWidth: 62, textAlign: 'right' }}>
+                      {yoyChange > 0 ? '+' : ''}{yoyChange.toLocaleString('ko-KR')}
+                    </span>
+                  )}
+                  <ChevronRight size={16} style={{ color: 'var(--color-text-secondary)', opacity: 0.5 }} />
+                </span>
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
 

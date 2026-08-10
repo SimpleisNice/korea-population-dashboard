@@ -23,7 +23,7 @@ export default function MapPage() {
           className="text-[12px] leading-relaxed"
           style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
         >
-          17개 시도의 전월 대비 인구 증감을 색상으로 표현한 지도입니다.
+          17개 시도의 전년 동월 대비 인구 증감을 색상으로 표현한 지도입니다.
           파란색 계열은 인구 증가, 붉은색 계열은 인구 감소를 나타냅니다.
           시도를 선택하면 해당 지역의 상세 정보를 확인할 수 있습니다.
         </p>

@@ -1,7 +1,7 @@
 # 서비스 기능 명세
 
-> 최종 업데이트: 2026-08-09
-> 대상: main 브랜치 `f3b2b13` 기준 코드 실사 결과
+> 최종 업데이트: 2026-08-10 (P0 데이터 정합성 작업 반영)
+> 대상: `docs/audit-2026-08` 브랜치 기준
 
 ---
 
@@ -24,7 +24,7 @@
 | 타깃 사용자 | 부동산 구매·투자 검토자, 이주 지역 리서치 사용자 |
 | 데이터 출처 | 행정안전부(MOIS) 주민등록 인구통계 |
 | 데이터 범위 | 인구·세대 40개월(2023.01~2026.04), 연령별 39개월(2023.01~2026.03) |
-| 집계 단위 | `index.json` 280개 = 최상위 시군구 230 + 일반구 39 + 출장소 11(데이터 없음) → **§5 참조** |
+| 집계 단위 | `index.json` 268개 = 최상위 시군구 **229** + 일반구 **39**. 합계·순위는 최상위만 사용 → **§5 참조** |
 | 갱신 주기 | 월 1회 수동 (`data/raw/`에 CSV 추가 후 `npm run build-data`) |
 | 렌더링 | Server Component 기본, 인터랙션 요소만 Client Component |
 | UI | 라이트 미니멀, 모바일 전용(`max-width: 430px`), 다크 모드 없음 |
@@ -72,6 +72,7 @@
 | 통계 요약 | 전월·전년비·순위를 pill로 요약 (`RegionInsight`) |
 | 지역 분석 | 인구 규모·1년 추세·가구 구성·성비를 수치에서 생성한 서술 3문단 (`RegionAnalysis`) |
 | 인구 추이 | **전년 동기 3개월 막대 비교**(`YoYBarChart`) — 라인 차트가 아님 |
+| **구별 현황** | 일반구가 있는 시에만 노출. 구별 인구·전년비 리스트 → 해당 구 페이지로 드릴다운 (`getChildDistricts`) |
 | 시점 비교 | 현재 월 vs 과거 특정 월 (Server Action fetch, `TimePeriodCompare`) |
 | 상세보기 링크 | `/detail` 이동 |
 
@@ -191,7 +192,7 @@
 | 시도 클릭 | 해당 시도 총인구 + 변화율 표시 |
 | 해설 + Footer | "인구 이동의 큰 그림" |
 
-> 페이지 상단 설명문은 "전월 대비"라고 쓰여 있으나 `getSidoStats()`와 `KoreaHeatmap` 범례는 **전년 동월 대비**를 쓴다 → §5 참조.
+> 색상 기준은 **전년 동월 대비** 변화율이다(`getSidoStats()`가 13개월 전과 비교). 설명문·범례 모두 동일하게 표기한다.
 
 **데이터:** `getSidoStats()`
 
@@ -205,7 +206,7 @@
 | `/privacy` | 개인정보처리방침 (시행일 2026-06-30). 회원가입 없음, 자동 수집 항목·AdSense 제3자 제공·쿠키 고지 |
 | `/methodology` | 데이터 출처·갱신 주기, 집계 단위, 행정경계 변경 처리, 지표 정의, 해석 가이드 |
 
-> `/about`·`/methodology`가 "전국 226개 시군구"라고 명시하나 실제 집계 대상은 다르다 → §5 참조.
+> `/about`·`/methodology`가 "전국 226개 시군구"라고 명시하나 실제 최상위 시군구는 229다 → §5 D6.
 
 ---
 
@@ -279,19 +280,21 @@ MOIS CSV (data/raw/, 3종 중 2종만 파싱)
 
 | 함수 | 반환 | 설명 | 집계 대상 |
 |------|----------|------|---|
-| `getAllRegions()` | `Region[]` | 전체 목록 (index.json) | 280 (혼합) |
+| `getAllRegions()` | `Region[]` | 전체 목록 — 검색·비교용 | 268 (일반구 포함) |
 | `getAvailableMonths()` | `string[]` | 연월 목록 — **index 첫 지역의 월 키만 사용** | — |
 | `getMonthStats(code, ym)` | `MonthlyStats \| null` | 단일 월 통계 | — |
 | `getRegionDetail(code, ym?, range=12)` | `RegionDetail \| null` | 추이·연령·YoY. `range=0`이면 전체 기간 | 단일 |
 | `getRegionBySlug(sido, sigungu)` | `Region \| null` | URL slug 조회 | — |
-| `getRegionRank(code, ym)` | `RegionRank \| null` | 시도 내 + 전국 순위 | 280 (혼합) |
-| `getAllRegionRankings(ym)` | `RegionRankEntry[]` | 순위 리스트 (데이터 없는 11개 제외 → 269행) | 269 (혼합) |
-| `getPopularRegions()` | `{code, rate}[]` | 12개월 증가율 TOP 6, 시도별 1개 | 혼합 |
-| `getDecliningRegions()` | `{code, rate}[]` | 12개월 감소율 TOP 6, 시도별 1개 | 혼합 |
-| `getAgingRegions()` | `{code, rate}[]` | 고령화 지수 TOP 6, 시도별 1개 | 혼합 |
-| `getPopulationTrends(3\|6\|12)` | `{gainers, losers}` | 급증·급감 TOP 10 | 혼합 |
-| `getNationalSummary()` | `NationalSummary \| null` | 전국 총인구 + 전월 증감 | **혼합 — 이중 계상** |
-| `getSidoStats()` | `SidoStat[]` | 시도별 인구 + **전년 동월 대비** 변화율 | **혼합 — 이중 계상** |
+| `getRegionRank(code, ym)` | `RegionRank \| null` | 시도 내 + 전국 순위 | 229 (최상위) |
+| `getAllRegionRankings(ym)` | `RegionRankEntry[]` | 순위 리스트. 기준월 데이터 없는 지역은 제외(폴백 없음) | 229 (최상위) |
+| `getPopularRegions()` | `{code, rate}[]` | 12개월 증가율 TOP 6, 시도별 1개 | 229 (최상위) |
+| `getDecliningRegions()` | `{code, rate}[]` | 12개월 감소율 TOP 6, 시도별 1개 | 229 (최상위) |
+| `getAgingRegions()` | `{code, rate}[]` | 고령화 지수 TOP 6, 시도별 1개 | 229 (최상위) |
+| `getPopulationTrends(3\|6\|12)` | `{gainers, losers}` | 급증·급감 TOP 10 | 229 (최상위) |
+| `getNationalSummary()` | `NationalSummary \| null` | 전국 총인구 + 전월 증감 | 229 (최상위) |
+| `getSidoStats()` | `SidoStat[]` | 시도별 인구 + **전년 동월 대비** 변화율 | 229 (최상위) |
+| `getTopLevelRegions()` | `Region[]` | **합계·순위의 유일한 대상 셀렉터** | 229 |
+| `getChildDistricts(parent, ym)` | `ChildDistrict[]` | 부모 시의 일반구 목록 (구별 현황 섹션용) | 해당 시의 구 |
 | `getAgeGroups(code, ym)` | `AgeGroup[] \| null` | 연령 분포 (10세 단위) | 단일 |
 
 **캐싱:** `indexCache`, `popularCache`, `decliningCache`, `agingCache`, `sidoStatsCache`, `nationalSummaryCache`(단일 값), `rankCache`/`trendCache`(Map). 모두 프로세스 메모리이며 무효화 경로가 없다 — 데이터가 빌드 산출물이므로 정상 동작이지만, 지역별 JSON은 요청마다 다시 읽는다.
@@ -333,20 +336,30 @@ SidoStat        { sido, population, changeRate }        // data.ts에 정의
 
 ## 5. 알려진 결함
 
-코드 실사(2026-08-09)로 확인된 항목. 상세 배경과 처리 순서는 `docs/backlog.md`.
+코드 실사(2026-08-09)로 확인. P0 작업(2026-08-10)에서 다수 해소되었다.
 
-| # | 결함 | 영향 | 확인 방법 |
+### ✅ 해소됨 (P0, 2026-08-10)
+
+| # | 결함 | 조치 | 검증 |
 |---|---|---|---|
-| D1 | **일반구 이중 계상** — `index.json`에 `수원시`와 `수원시 장안구`가 함께 존재. 전국·시도 합계가 39개 일반구를 두 번 더한다 | 홈 전국 총인구 61,620,651명 vs MOIS 공식 51,097,986명 → **+20.6%**. 최상위 시군구만 더하면 50,879,765명(공식값과 0.43% 이내). 시도 지도 절대값도 동일하게 과다 | `curl localhost:3000 \| grep totalPopulation` → `61620651` |
-| D2 | **순위표 단위 혼재** — 수원시(약 120만)와 수원시 장안구(약 30만)가 같은 순위표에서 경쟁 | 순위 신뢰도 저하 | `/ranking`에 수원시 장안구/권선구/팔달구/영통구 모두 노출 |
-| D3 | **`nationalTotal` 불일치** — 280으로 보고하나 실제 렌더 행은 269 | "전국 N위 / 280" 표기 오류 | `/ranking` HTML `nationalTotal":280` |
-| D4 | **세종특별자치시 도달 불가** — `sigungu: ''`라 `/세종특별자치시/`가 404 | 17개 시도 중 1개 상세 조회 불가, sitemap에 깨진 URL 포함 | HTTP 404 확인됨 |
-| D5 | **출장소 11개 유령 엔트리** — index에 있으나 JSON 파일 없음(영종·용유·검단·송탄·안중·풍양·화성동부·동탄·남양·장유·웅상) | 홈 검색에서 선택 시 404 | HTTP 404 확인됨 |
-| D6 | **문서상 시군구 수 오류** — `/about`·`/methodology`가 "226개"라고 명시. 실제 최상위 시군구는 230, 렌더 가능 엔트리는 269 | 사용자 대상 사실 오류 | 데이터 카운트 |
-| D7 | **지도 설명문 오류** — `/map` 상단이 "전월 대비"라고 하나 실제 계산은 전년 동월 대비 | 지표 오해 | `getSidoStats()`가 `months[length-13]` 사용 |
-| D8 | **레거시 JSON 34개 잔존** — `build-data`가 출력 디렉터리를 비우지 않아 강원 42xx·전북 45xx JSON이 커밋된 채 유지 | 저장소 오염, 향후 개편 때 반복 | `index.json`에 없는 파일 34개 |
-| D9 | **`sitemap.ts`/`robots.ts` 폴백 불일치** — `NEXT_PUBLIC_SITE_URL` 미설정 시 `https://example.com` (지역 페이지는 vercel 도메인으로 폴백) | 환경변수 누락 시 SEO 파손 | 코드 |
-| D10 | **`src/components/ui/RangeToggle.tsx` 미사용** — `DetailTabs`가 동명 로컬 컴포넌트를 별도 정의 | dead code | import 없음 |
-| D11 | **`getAvailableMonths()`가 index 첫 지역에만 의존** — 종로구가 최신월을 갖지 못하면 전 서비스 기준월이 밀린다 | 잠재적 단일 장애점 | 코드 |
-| D12 | **군위군 시계열 단절** — 2023.07 경북→대구 개편(4772000000→2772000000)이 `LEGACY_CODE_MAP`에 없다 | `경상북도 군위군`은 2023.01~06(6개월)에서 멈춘 유령 지역, `대구광역시 군위군`은 2023.07~(34개월)만 존재. 두 페이지 모두 3년치 추이가 잘려 보인다 | JSON 월 범위 |
-| D13 | **정지된 데이터가 현재값처럼 노출** — 순위 함수가 `latestAvailable()`로 폴백해 최신월이 없는 지역에 과거 수치를 채운다 | 2026.04 순위표에 경북 군위군이 **2023.06 수치 23,139명**으로 등장. 기준월 표기와 실제 데이터 시점이 다르다 | `getAllRegionRankings` + D12 |
+| D1 | 일반구 이중 계상 — 전국·시도 합계가 39개 일반구를 두 번 더함 | `Region.level` 도입 + `getTopLevelRegions()` 단일 셀렉터로 집계 함수 전환 | 홈 전국 총인구 61,620,651 → **50,879,765** (MOIS 공식 51,097,986 대비 -0.43%) |
+| D2 | 순위표 단위 혼재 — 수원시와 수원시 장안구가 같은 표에서 경쟁 | 순위·트렌딩·홈 인기지역 전부 최상위 시군구만 | `/ranking`에 일반구 0건, 고양시 중복 해소 |
+| D3 | `nationalTotal` 불일치 (280 vs 269) | 실제 대상 수와 일치 | `nationalTotal: 229` |
+| D4 | 세종특별자치시 404 (`sigungu: ''`) | 빌드 시 빈 sigungu를 시도명으로 채움 | `/세종특별자치시/세종특별자치시` → 200 |
+| D5 | 출장소 11개 유령 엔트리 | 월 데이터 없는 지역은 `index.json`에서 제외 | 검색에서 사라짐, index 268 = 파일 268 |
+| D7 | `/map` 설명문 "전월 대비" (실제는 전년 동월) | 문구 수정 | — |
+| D8 | 레거시 JSON 34개 잔존 | `build-data`가 출력 디렉터리를 먼저 비움 | 고아 파일 0 |
+| D9 | `sitemap.ts`/`robots.ts` 폴백 불일치 (`example.com`) | `src/lib/site.ts` 단일 출처로 통합 | robots·canonical·sitemap 동일 도메인 |
+| D12 | 군위군 시계열 단절 (2023.07 경북→대구) | `LEGACY_CODE_MAP`에 `4772000000 → 2772000000` 추가 | 대구 군위군 **40개월** (2023.01~2026.04) 연속 |
+| D13 | 정지된 데이터가 현재값처럼 노출 | `latestAvailable()` 폴백 제거 — 기준월 데이터 없으면 순위·합계에서 제외 | 경북 군위군 소멸 |
+| — | sitemap·canonical 이중 슬래시 (`vercel.app//경기도/...`) | `SITE_URL`에서 후행 슬래시 정규화 | 이중 슬래시 0건 |
+
+**집계 단위 확정:** `index.json` 268 = 최상위 시군구 **229** + 일반구 **39**. 일반구는 검색·비교·지역 상세에서는 유지되고, 합계·순위에서만 제외된다. 부모 시 상세의 "구별 현황" 섹션이 드릴다운 경로다.
+
+### ⚠️ 남은 항목
+
+| # | 결함 | 영향 | 처리 |
+|---|---|---|---|
+| D6 | **문서상 시군구 수 오류** — `/about`·`/methodology`가 "226개"로 명시. 실제 최상위 시군구는 229 | 사용자 대상 사실 오류 | P1-2 — 하드코딩 대신 데이터에서 렌더 |
+| D10 | **`src/components/ui/RangeToggle.tsx` 미사용** — `DetailTabs`가 동명 로컬 컴포넌트를 별도 정의 | dead code | P1-6 |
+| D11 | **`getAvailableMonths()`가 index 첫 지역에만 의존** — 종로구가 최신월을 갖지 못하면 전 서비스 기준월이 밀린다 | 잠재적 단일 장애점 | P1-4 |
