@@ -3,6 +3,7 @@ import { MobileShell } from '@/components/layout/MobileShell'
 import { HomePageClient } from '@/components/home/HomePageClient'
 import {
   getAllRegions,
+  getTopLevelRegions,
   getPopularRegions,
   getDecliningRegions,
   getAgingRegions,
@@ -40,6 +41,7 @@ export default function HomePage() {
         growthRegions={growthRegions}
         declineRegions={declineRegions}
         agingRegions={agingRegions}
+        sigunguCount={getTopLevelRegions().length}
       />
     </MobileShell>
   )

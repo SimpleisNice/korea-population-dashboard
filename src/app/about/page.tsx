@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { getTopLevelRegions } from '@/lib/data'
 import { Database, BarChart2, TrendingUp, GitCompare, Map } from 'lucide-react'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
@@ -34,6 +35,8 @@ const FEATURES = [
 ]
 
 export default function AboutPage() {
+  // 지역 수는 문구에 하드코딩하지 않고 데이터에서 가져온다 (docs/principles.md B1)
+  const sigunguCount = getTopLevelRegions().length
   return (
     <MobileShell>
       <Header title="서비스 소개" showBack backHref="/" />
@@ -63,8 +66,8 @@ export default function AboutPage() {
             style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
           >
             부동산 구매 전 꼭 확인해야 할 시군구별 인구 현황을 한눈에 보여주는 서비스입니다.
-            행정안전부가 매월 공개하는 주민등록 인구통계 데이터를 기반으로, 전국 226개
-            시군구의 인구 추이, 세대수, 연령 구조, 전입출 현황을 분석합니다.
+            행정안전부가 매월 공개하는 주민등록 인구통계 데이터를 기반으로, 전국 {sigunguCount}개
+            시군구의 인구 추이, 세대수, 연령 구조, 인구 증감을 분석합니다.
           </p>
           <p
             className="text-[14px] leading-relaxed"

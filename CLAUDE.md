@@ -11,10 +11,10 @@ npm run dev        # build-data 후 dev 서버 (http://localhost:3000)
 npm run build      # build-data 후 프로덕션 빌드
 npm run build-data # data/raw/*.csv → public/data/regions/*.json (dev/build 전 자동 실행)
 npm run lint       # ESLint
-npx vitest run     # 테스트 — package.json에 test 스크립트는 없음
+npm run test       # build-data 후 vitest run
 ```
 
-테스트 파일은 아직 없다(`npx vitest run` → "No test files found"). 추가한다면 `scripts/csv-to-json.ts`와 `src/lib/data.ts`의 집계 함수부터. 아래 "집계 단위 함정"이 바로 회귀 테스트가 필요한 지점이다.
+`src/lib/data.test.ts`가 빌드 산출물을 대상으로 파이프라인 회귀를 지킨다(21개). 각 테스트는 `docs/spec.md` §5 결함 번호에 대응하며, 특히 **전국 합계를 원본 CSV의 MOIS 공식 전국 행과 대조**한다. 집계 로직을 건드렸으면 이 테스트를 먼저 돌린다.
 
 ## What This Is
 
@@ -78,8 +78,8 @@ npx vitest run     # 테스트 — package.json에 test 스크립트는 없음
 - **URL 상태(`nuqs`/searchParams)** — React state나 Context를 쓰지 않는다. 필터가 새로고침·공유에 살아남는다
 - **라이트·모바일 전용 UI** — 다크 모드·데스크톱 레이아웃 없음(의도된 결정). 최대 폭 430px(`--max-w`), `MobileShell` 래퍼. 디자인 토큰은 `src/app/globals.css`의 `@theme`
 - **하단 네비게이션** — `BottomNav` 4탭: 홈 / 지도 / 순위(트렌딩 포함) / 비교
-- **AdSense 운영 중** — `src/components/AdSlot.tsx`가 마운트 시 `window.adsbygoogle`에 push. 퍼블리셔 ID(`ca-pub-4466379680692265`)는 실 승인 ID로 컴포넌트·`layout.tsx`·`public/ads.txt`에 하드코딩. 슬롯 ID만 `NEXT_PUBLIC_ADSENSE_SLOT_BANNER` 환경변수. `slot`이 비었거나 `enabled={false}`면 `null`을 반환해 광고 유닛 자체를 렌더하지 않는다. **광고 배치는 홈·순위·트렌딩 3개 페이지 하단뿐**이며, 지역 요약·상세·비교·지도에는 광고가 없다(빈·얇은 화면 정책 위반 방지)
-- **AdSense 대시보드에서 자동 광고(Auto Ads)는 반드시 OFF 유지** — `adsbygoogle.js`가 `layout.tsx` head에서 전 페이지에 로드되므로, 자동 광고가 켜지면 지도·비교 빈 상태 같은 얇은 화면에 광고가 자동 삽입되어 "게시자 콘텐츠가 없는 화면" 위반이 재발한다
+- **AdSense 운영 중** — `src/components/AdSlot.tsx`가 광고 유닛과 `adsbygoogle.js` 스크립트를 **함께** 렌더한다. 퍼블리셔 ID(`ca-pub-4466379680692265`)는 실 승인 ID로 컴포넌트와 `public/ads.txt`에 하드코딩. 슬롯 ID만 `NEXT_PUBLIC_ADSENSE_SLOT_BANNER` 환경변수. `slot`이 비었거나 `enabled={false}`면 `null`을 반환해 광고 유닛도 스크립트도 렌더하지 않는다
+- **`adsbygoogle.js`를 루트 레이아웃에 넣지 말 것.** 전역 로드 시 자동 광고(Auto Ads)가 지도·비교 빈 상태·지역 상세처럼 콘텐츠가 얇은 화면에도 광고를 삽입해 "게시자 콘텐츠가 없는 화면" 위반이 재발한다. 스크립트를 `AdSlot` 안에 둠으로써 **대시보드에서 자동 광고가 켜져 있어도 다른 화면에는 삽입될 수 없다**. 광고가 존재하는 페이지는 홈·`/ranking`·`/trending` 뿐이다
 
 ## 환경변수
 

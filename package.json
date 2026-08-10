@@ -7,7 +7,8 @@
     "dev": "npm run build-data && next dev",
     "build": "npm run build-data && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npm run build-data && vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

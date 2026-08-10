@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { getAllRegions, getTopLevelRegions } from '@/lib/data'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -68,6 +69,9 @@ const TERMS: { term: string; desc: string }[] = [
 ]
 
 export default function MethodologyPage() {
+  // 지역 수는 문구에 하드코딩하지 않고 데이터에서 가져온다 (docs/principles.md B1)
+  const sigunguCount = getTopLevelRegions().length
+  const districtCount = getAllRegions().length - sigunguCount
   return (
     <MobileShell>
       <Header title="데이터 방법론" showBack backHref="/about" />
@@ -98,12 +102,15 @@ export default function MethodologyPage() {
 
         <Card title="집계 단위와 경계 변경 처리">
           <p className="text-[13px] leading-relaxed" style={{ ...P, marginBottom: 8 }}>
-            집계 단위는 전국 <strong style={{ color: 'var(--color-text-primary)' }}>226개 시군구</strong>입니다.
+            집계 단위는 전국 <strong style={{ color: 'var(--color-text-primary)' }}>{sigunguCount}개 시군구</strong>입니다.
+            수원시 장안구처럼 시 아래에 있는 일반구 {districtCount}곳은 상위 시에 이미 포함되어 있어
+            전국·시도 합계와 순위에서는 중복 집계하지 않고, 해당 시의 상세 화면에서 따로 확인할 수 있습니다.
             17개 시도 상위 집계는 지도·요약에만 사용하고, 순위·상세 페이지는 시군구 단위로 제공합니다.
           </p>
           <p className="text-[13px] leading-relaxed" style={P}>
-            행정구역 개편으로 지역 코드가 바뀐 경우(예: 강원 2023년 6월, 전북 2024년 1월)에도
-            시계열이 끊기지 않도록 개편 전후 코드를 하나의 지역으로 연결해 추이를 이어서 보여줍니다.
+            행정구역 개편으로 지역 코드가 바뀐 경우(예: 강원 2023년 6월, 전북 2024년 1월,
+            군위군의 대구 편입 2023년 7월)에도 시계열이 끊기지 않도록 개편 전후 코드를
+            하나의 지역으로 연결해 추이를 이어서 보여줍니다.
           </p>
         </Card>
 

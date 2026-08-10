@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Noto_Sans_KR } from 'next/font/google'
-import Script from 'next/script'
 import { BottomNav } from '@/components/layout/BottomNav'
 import './globals.css'
 
@@ -22,17 +21,13 @@ export const metadata: Metadata = {
   },
 }
 
+// adsbygoogle.js 는 여기(전역)에서 로드하지 않는다.
+// 전역 로드 시 자동 광고(Auto Ads)가 지도·비교 빈 상태처럼 콘텐츠가 얇은 화면에도
+// 광고를 자동 삽입해 "게시자 콘텐츠가 없는 화면" 정책 위반을 일으킨다.
+// 스크립트는 AdSlot 이 실제로 광고를 렌더할 때만 함께 주입된다 — docs/principles.md E1.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className={notoSansKr.className}>
-      <head>
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4466379680692265"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
-      </head>
       <body>
         {children}
         <BottomNav />

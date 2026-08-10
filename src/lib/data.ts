@@ -131,6 +131,9 @@ export function getChildDistricts(parent: Region, ym: string): ChildDistrict[] {
 
   const prefix = `${parent.code.slice(0, 4)}`
   const namePrefix = `${parent.sigungu} `
+  const months = getAvailableMonths()
+  const ymIdx = months.indexOf(ym)
+  const yoyYm = ymIdx >= 12 ? months[ymIdx - 12] : null
 
   return loadIndex()
     .filter(r =>
@@ -139,12 +142,10 @@ export function getChildDistricts(parent: Region, ym: string): ChildDistrict[] {
       r.sigungu.startsWith(namePrefix),
     )
     .flatMap(r => {
-      const months = readRegionJSON(r.code)?.months
-      const stats = months?.[ym]
+      const regionMonths = readRegionJSON(r.code)?.months
+      const stats = regionMonths?.[ym]
       if (!stats) return []
-      const ymIdx = getAvailableMonths().indexOf(ym)
-      const yoyYm = ymIdx >= 12 ? getAvailableMonths()[ymIdx - 12] : null
-      const yoyStats = yoyYm ? months?.[yoyYm] ?? null : null
+      const yoyStats = yoyYm ? regionMonths?.[yoyYm] ?? null : null
       return [{
         region: r,
         population: stats.population,
@@ -154,12 +155,28 @@ export function getChildDistricts(parent: Region, ym: string): ChildDistrict[] {
     .sort((a, b) => b.population - a.population)
 }
 
+let availableMonthsCache: string[] | null = null
+
+/**
+ * 서비스가 제공하는 연월 목록.
+ *
+ * 이전에는 index 첫 지역(종로구)의 월 키만 읽었다. 그 지역 하나가 최신월을 갖지 못하면
+ * 서비스 전체의 기준월이 조용히 밀리는 단일 장애점이었다.
+ * 이제 최상위 시군구 전체의 합집합을 쓴다 — 한 지역이 빠져도 기준월은 유지되고,
+ * 그 지역은 순위·합계에서 제외될 뿐이다 (docs/principles.md A4-1).
+ */
 export function getAvailableMonths(): string[] {
-  // 첫 번째 지역 JSON에서 월 목록 추출 (모든 지역 동일)
-  const regions = loadIndex()
-  if (regions.length === 0) return []
-  const json = readRegionJSON(regions[0].code)
-  return json ? Object.keys(json.months).sort() : []
+  if (availableMonthsCache) return availableMonthsCache
+
+  const months = new Set<string>()
+  for (const r of getTopLevelRegions()) {
+    const json = readRegionJSON(r.code)
+    if (!json) continue
+    for (const ym of Object.keys(json.months)) months.add(ym)
+  }
+
+  availableMonthsCache = [...months].sort()
+  return availableMonthsCache
 }
 
 export function getMonthStats(code: string, ym: string): MonthlyStats | null {
