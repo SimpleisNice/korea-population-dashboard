@@ -9,6 +9,9 @@ import { getSidoStats } from '@/lib/data'
 export const metadata: Metadata = {
   title: '인구 지도 — 시도별 인구 현황',
   description: '대한민국 17개 시도의 인구 증감을 지도로 확인하세요.',
+  // 탐색용 도구 화면이라 고유 텍스트가 거의 없다(본문 약 400자).
+  // 색인에 올리면 검색·심사 표본에서 사이트 전체 품질을 끌어내린다.
+  robots: { index: false, follow: true },
 }
 
 export default function MapPage() {

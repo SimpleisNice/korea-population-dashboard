@@ -79,6 +79,87 @@ export default function AboutPage() {
           </p>
         </div>
 
+        {/* 왜 시군구 단위인가 */}
+        <div
+          className="rounded-xl"
+          style={{
+            backgroundColor: 'var(--color-bg)',
+            boxShadow: 'var(--shadow-card)',
+            padding: '20px',
+            marginBottom: 16,
+          }}
+        >
+          <h2
+            className="text-[15px] font-bold"
+            style={{ color: 'var(--color-text-primary)', marginBottom: 10 }}
+          >
+            왜 시군구 단위인가
+          </h2>
+          <p
+            className="text-[14px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
+          >
+            공공 통계 포털에서 인구 대시보드를 보면 대부분 전국과 17개 광역시도까지만 제공합니다.
+            그런데 집을 사거나 가게를 열 때의 의사결정 단위는 &ldquo;경기도&rdquo;가 아니라
+            &ldquo;화성시&rdquo;입니다. 같은 도 안에서도 인구가 매년 2% 늘어나는 곳과
+            1.5% 줄어드는 곳이 함께 있기 때문에, 광역 단위 수치는 판단에 쓰기 어렵습니다.
+          </p>
+          <p
+            className="text-[14px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
+          >
+            이 서비스는 {sigunguCount}개 시군구를 같은 기준으로 집계해 서로 비교할 수 있게 만듭니다.
+            수원시 장안구처럼 시 아래에 있는 일반구는 상위 시에 이미 포함되어 있어
+            전국 합계와 순위에서는 중복으로 세지 않고, 해당 시의 상세 화면에서 따로 볼 수 있게 했습니다.
+            합계가 맞지 않는 대시보드는 어떤 판단에도 쓸 수 없다고 보기 때문입니다.
+          </p>
+          <p
+            className="text-[14px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            지표를 많이 늘어놓는 대신, 각 지역 화면 맨 위에 &ldquo;그래서 어떤 지역인가&rdquo;를
+            한 문장으로 먼저 제시합니다. 인구 추세와 연령 구성, 세대수 변화를 함께 읽어
+            판단의 출발점을 주는 것이 목표입니다.
+          </p>
+        </div>
+
+        {/* 이 데이터로 답할 수 있는 것 / 없는 것 */}
+        <div
+          className="rounded-xl"
+          style={{
+            backgroundColor: 'var(--color-bg)',
+            boxShadow: 'var(--shadow-card)',
+            padding: '20px',
+            marginBottom: 16,
+          }}
+        >
+          <h2
+            className="text-[15px] font-bold"
+            style={{ color: 'var(--color-text-primary)', marginBottom: 10 }}
+          >
+            답할 수 있는 것과 없는 것
+          </h2>
+          <p
+            className="text-[14px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
+          >
+            <strong style={{ color: 'var(--color-text-primary)' }}>답할 수 있는 것:</strong>{' '}
+            이 동네 인구가 최근 몇 년간 늘었는지 줄었는지, 어느 연령대가 두꺼운지,
+            1~2인 가구로 쪼개지는 중인지, 같은 시도 안에서 몇 번째 규모인지.
+            이사나 매수 후보지를 좁힐 때, 창업 후보 상권의 배후 인구를 가늠할 때 쓰는 정보입니다.
+          </p>
+          <p
+            className="text-[14px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            <strong style={{ color: 'var(--color-text-primary)' }}>답할 수 없는 것:</strong>{' '}
+            집값과 실거래가, 유동 인구와 상권 매출, 앞으로의 공식 인구 추계.
+            주민등록 인구는 등록 주소지 기준이라 실제 거주 인구나 낮 시간대 유동 인구와 다릅니다.
+            상세 화면의 예측선도 최근 추세를 단순 연장한 참고용이며 공식 추계가 아닙니다.
+            이 서비스의 수치는 다른 자료와 함께 보는 기초 자료로 활용해 주세요.
+          </p>
+        </div>
+
         {/* 주요 기능 */}
         <div
           className="rounded-xl"

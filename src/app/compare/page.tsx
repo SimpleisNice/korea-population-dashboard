@@ -9,6 +9,9 @@ import { getAllRegions, getRegionDetail, getAvailableMonths } from '@/lib/data'
 export const metadata: Metadata = {
   title: '지역 비교',
   description: '두 시군구의 인구 통계를 나란히 비교해보세요.',
+  // 지역을 고르기 전에는 빈 상태(본문 약 560자)인 도구 화면이라 색인하지 않는다.
+  // 비교 결과는 URL 파라미터에 의존해 크롤러가 보는 것은 언제나 빈 화면이다.
+  robots: { index: false, follow: true },
 }
 
 interface SearchParams {
