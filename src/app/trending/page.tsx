@@ -1,3 +1,16 @@
+/**
+ * 인구 트렌딩 `/trending`
+ *
+ * 목적    최근 인구 변화가 큰 지역 탐색.
+ * 파라미터 없음 (기간 3/6/12개월은 클라이언트 상태 → P2-1)
+ * 렌더링  정적
+ * 데이터  getPopulationTrends(3·6·12) · getAvailableMonths
+ * 광고    있음
+ * 색인    포함 · sitemap priority 0.9
+ *
+ * 서버가 3개 기간을 모두 계산해 넘기고 클라이언트는 전환만 한다.
+ * BottomNav 에는 /ranking 과 통합되어 별도 탭이 없다.
+ */
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { BarChart2 } from 'lucide-react'

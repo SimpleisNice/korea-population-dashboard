@@ -1,3 +1,15 @@
+/**
+ * 서비스 소개 `/about`
+ *
+ * 목적    무엇을 답하고 무엇을 답하지 못하는지 밝힌다.
+ * 파라미터 없음
+ * 렌더링  정적
+ * 데이터  getTopLevelRegions().length (지역 수)
+ * 광고    없음
+ * 색인    포함 · sitemap priority 0.4
+ *
+ * 지역 수는 하드코딩하지 않고 데이터에서 렌더한다 — 개편마다 바뀐다 (principles.md B1).
+ */
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTopLevelRegions } from '@/lib/data'

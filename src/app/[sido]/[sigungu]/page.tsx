@@ -1,3 +1,21 @@
+/**
+ * 지역 요약 `/[sido]/[sigungu]`
+ *
+ * 목적    시군구 핵심 지표와 한 줄 판정.
+ * 파라미터 ym(기본 최신월) · cmp(비교 링크 프리셋용 지역코드)
+ * 렌더링  동적
+ * 데이터  getRegionBySlug · getRegionDetail(range=12) · getRegionRank
+ *         getChildDistricts · getMonthStats · getAvailableMonths
+ * 광고    없음
+ * 색인    포함 · sitemap priority 0.8 · OG 이미지 /api/og
+ *
+ * 폐지 지역(Region.retiredAfter)은 최신월 데이터가 없다. 기준월을 그 지역의
+ * 마지막 달로 되돌리고 최상단에 폐지 안내와 승계 지역 링크를 띄운다.
+ * 되돌리지 않으면 getRegionDetail 이 null 을 반환해 404 가 된다 (principles.md A4-2).
+ *
+ * 판정·분석 문단은 전부 이 지역의 실제 수치에서 파생된다 (principles.md B2).
+ * 라인 추이 차트와 기간 토글은 이 페이지가 아니라 /detail 에 있다.
+ */
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'

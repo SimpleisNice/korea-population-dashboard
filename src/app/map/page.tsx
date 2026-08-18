@@ -1,3 +1,18 @@
+/**
+ * 인구 지도 `/map`
+ *
+ * 목적    시도별 인구 증감을 SVG choropleth 로.
+ * 파라미터 없음
+ * 렌더링  정적
+ * 데이터  getSidoStats
+ * 광고    없음
+ * 색인    **noindex** · sitemap 제외
+ *
+ * 색상 기준은 전년 동월 대비 변화율이다(getSidoStats 가 13개월 전과 비교).
+ * 도형 id ↔ 시도명 매핑은 src/lib/sido-map.ts 에 있고 테스트로 고정되어 있다 —
+ * 개편으로 시도명이 바뀌면 그 지역만 조용히 회색이 된다.
+ * 고유 텍스트가 거의 없는 도구 화면이라 색인에서 뺐다 (spec.md §5).
+ */
 import type { Metadata } from 'next'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'

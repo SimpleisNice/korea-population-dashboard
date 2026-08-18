@@ -1,3 +1,16 @@
+/**
+ * 개인정보처리방침 `/privacy`
+ *
+ * 목적    AdSense 심사 요건이자 법적 고지. 시행일 2026-06-30.
+ * 파라미터 없음
+ * 렌더링  정적
+ * 데이터  없음
+ * 광고    없음
+ * 색인    포함 · sitemap priority 0.2
+ *
+ * 회원가입·로그인이 없고 서버에 개인 데이터를 저장하지 않는다.
+ * 즐겨찾기·최근 본 지역은 localStorage 에만 있다.
+ */
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MobileShell } from '@/components/layout/MobileShell'

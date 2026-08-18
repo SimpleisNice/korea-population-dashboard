@@ -1,3 +1,18 @@
+/**
+ * 지역 순위 `/ranking`
+ *
+ * 목적    현행 최상위 시군구를 지표별로 정렬.
+ * 파라미터 sort(population|popChange|popChangeRate|households, 기본 population)
+ *         sido(시도명)
+ * 렌더링  동적 (searchParams)
+ * 데이터  getAllRegionRankings(최신월) · getAvailableMonths
+ * 광고    있음 (리스트 하단)
+ * 색인    포함 · sitemap priority 0.9
+ *
+ * 기준월은 항상 최신월 고정 — MonthPicker 가 없다.
+ * 순위 대상은 현행 최상위 시군구뿐이다. 일반구는 부모 시에 이미 포함되어 있고,
+ * 폐지 지역은 최신월 데이터가 없어 자동 제외된다 (principles.md A1·A4-1).
+ */
 import type { Metadata } from 'next'
 import { MobileShell } from '@/components/layout/MobileShell'
 import { Header } from '@/components/layout/Header'

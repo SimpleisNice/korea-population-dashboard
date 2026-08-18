@@ -1,3 +1,19 @@
+/**
+ * 지역 상세 `/[sido]/[sigungu]/detail`
+ *
+ * 목적    추이·세대·연령·증감 심층.
+ * 파라미터 ym(기본 최신월). 기간 토글(6/12/전체)은 클라이언트 상태 → P2-1
+ * 렌더링  동적
+ * 데이터  getRegionBySlug · getRegionDetail(range=0 → 전체 기간)
+ *         연령 탭 시점 변경은 Server Action(fetchAgeGroups)
+ * 광고    없음
+ * 색인    포함 · sitemap priority 0.6
+ *
+ * range=0 으로 전체 기간을 넘기고 축소는 DetailTabs 안에서 한다.
+ * 탭 4개: 인구추이 / 세대 / 연령 / 증감.
+ * 구 "전입출" 탭은 증감 탭에 통합됐다 — 같은 데이터로 같은 차트를 두 번 그렸고,
+ * 우리는 전입·전출 데이터를 갖고 있지 않다 (principles.md A3).
+ */
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'

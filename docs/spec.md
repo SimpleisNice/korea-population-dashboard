@@ -1,6 +1,6 @@
 # 서비스 기능 명세
 
-> 최종 업데이트: 2026-08-19 (P1-5 탭 통합 · P1-8 lint 해소)
+> 최종 업데이트: 2026-08-19 (P1 완료 · 페이지 명세 헤더 도입)
 > 대상: `main` 브랜치 기준
 
 ---
@@ -34,6 +34,21 @@
 ---
 
 ## 2. 페이지 명세
+
+각 페이지 파일 상단에 **같은 내용의 명세 헤더**가 있다(목적·파라미터·렌더링·데이터·광고·색인).
+코드를 고칠 때는 그 헤더를, 전체 그림을 볼 때는 이 문서를 본다. 둘이 어긋나면 헤더가 사실이다.
+
+| 경로 | 파일 | 광고 | 색인 |
+|---|---|:--:|:--:|
+| `/` | `src/app/page.tsx` | ○ | ○ |
+| `/[sido]/[sigungu]` | `src/app/[sido]/[sigungu]/page.tsx` | ✕ | ○ |
+| `/[sido]/[sigungu]/detail` | `src/app/[sido]/[sigungu]/detail/page.tsx` | ✕ | ○ |
+| `/ranking` | `src/app/ranking/page.tsx` | ○ | ○ |
+| `/trending` | `src/app/trending/page.tsx` | ○ | ○ |
+| `/map` | `src/app/map/page.tsx` | ✕ | **noindex** |
+| `/compare` | `src/app/compare/page.tsx` | ✕ | **noindex** |
+| `/about` · `/methodology` · `/privacy` | 각 `page.tsx` | ✕ | ○ |
+| `/api/og` | `src/app/api/og/route.tsx` | — | — |
 
 ### 2-1. 홈 `/`
 

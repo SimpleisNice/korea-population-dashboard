@@ -1,3 +1,18 @@
+/**
+ * 지역 비교 `/compare`
+ *
+ * 목적    두 지역을 나란히 비교.
+ * 파라미터 region_a · region_b(10자리 코드) · ym(YYYYMM)
+ * 렌더링  동적 (searchParams)
+ * 데이터  getAllRegions · getRegionDetail · getAvailableMonths
+ *         이후 갱신은 Server Action(fetchRegionDetail)
+ * 광고    없음
+ * 색인    **noindex** · sitemap 제외
+ *
+ * 검색·비교는 일반구도 대상이다(getAllRegions). 합계·순위와 달리 계층을 섞어도
+ * 이중 계상이 생기지 않는다 — 두 지역을 고르는 화면이기 때문이다.
+ * 빈 상태에서 고유 텍스트가 거의 없어 색인에서 뺐다.
+ */
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { MobileShell } from '@/components/layout/MobileShell'
