@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/Header'
 export const metadata: Metadata = {
   title: '서비스 소개 — 인구통계',
   description:
-    '행정안전부 주민등록 인구통계 공개 데이터를 기반으로 전국 시군구 인구 현황, 추이, 연령 구조, 전입출 현황을 한눈에 확인할 수 있는 서비스입니다.',
+    '행정안전부 주민등록 인구통계 공개 데이터를 기반으로 전국 시군구 인구 현황, 추이, 연령 구조, 인구 증감을 한눈에 확인할 수 있는 서비스입니다.',
 }
 
 const FEATURES = [

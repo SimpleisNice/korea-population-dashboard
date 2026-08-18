@@ -2,12 +2,12 @@
 
 import { useState, useRef } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { TrendChart } from '@/components/region/TrendChart'
 import { AgeCompareTab } from './AgeCompareTab'
 import { AgeInsightCards } from './AgeInsightCards'
 import { ChangeChart } from './ChangeChart'
-import { MigrationTab } from './MigrationTab'
+import { NetChangeInsight, CumulativeChangeChart, NetChangeDisclosure } from './NetChangeTab'
 import { StatCard } from '@/components/region/StatCard'
 import type { RegionDetail, TrendPoint, MonthlyStats } from '@/lib/types'
 import { buildForecast } from '@/lib/utils'
@@ -24,7 +24,6 @@ const TABS = [
   { id: 'household', label: '세대' },
   { id: 'age',       label: '연령' },
   { id: 'change',    label: '증감' },
-  { id: 'migration', label: '전입출' },
 ]
 
 const CONTENT_EASE = [0.25, 0.46, 0.45, 0.94] as [number, number, number, number]
@@ -47,11 +46,14 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
   const { latest, prevMonth, trend, ageGroups } = detail
   const [range, setRange] = useState<Range>('12')
   const [activeTab, setActiveTab] = useState('trend')
-  const prevTabRef = useRef('trend')
+  // 전환 방향은 렌더 중 ref 를 읽어 구하지 않는다. ref 는 렌더에 필요한 값이 아니고,
+  // 렌더 중 읽으면 값이 언제 갱신되는지가 렌더 순서에 의존하게 된다.
+  // 방향이 정해지는 시점은 탭을 누르는 순간이므로 거기서 계산해 state 로 둔다.
+  const [direction, setDirection] = useState<1 | -1>(1)
   const tabBarRef = useRef<HTMLDivElement>(null)
 
   function handleTabChange(tab: string) {
-    prevTabRef.current = activeTab
+    setDirection(getDirection(activeTab, tab))
     setActiveTab(tab)
     // 탭 바 위치로 부드럽게 스크롤
     setTimeout(() => {
@@ -65,7 +67,6 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
 
   const visibleTrend = sliceTrend(trend, range)
   const forecast = buildForecast(visibleTrend, 6)
-  const direction = getDirection(prevTabRef.current, activeTab)
 
   return (
     <Tabs.Root value={activeTab} onValueChange={handleTabChange} className="space-y-4">
@@ -202,7 +203,9 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
         </motion.div>
       </Tabs.Content>
 
-      {/* 증감 탭 */}
+      {/* 증감 탭 — 구 '전입출' 탭을 여기로 합쳤다.
+          두 탭이 같은 trend 데이터로 같은 막대 차트를 두 번 그리고 있었고,
+          '전입출'은 우리가 갖고 있지 않은 지표의 이름이었다 (docs/principles.md A3·0-1) */}
       <Tabs.Content value="change" forceMount style={{ display: activeTab === 'change' ? undefined : 'none' }}>
         <motion.div
           key="change"
@@ -211,9 +214,10 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
           transition={{ duration: 0.3, ease: CONTENT_EASE }}
         >
           <ChangeSummary trend={visibleTrend} />
+          <NetChangeInsight trend={visibleTrend} />
           <div
             className="rounded-xl p-4"
-            style={{ backgroundColor: 'var(--color-bg)', boxShadow: 'var(--shadow-card)' }}
+            style={{ backgroundColor: 'var(--color-bg)', boxShadow: 'var(--shadow-card)', marginBottom: 12 }}
           >
             <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
               <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
@@ -223,18 +227,16 @@ export function DetailTabs({ detail, regionCode, currentMonth, availableMonths }
             </div>
             <ChangeChart data={visibleTrend} />
           </div>
-        </motion.div>
-      </Tabs.Content>
-
-      {/* 전입출 탭 */}
-      <Tabs.Content value="migration" forceMount style={{ display: activeTab === 'migration' ? undefined : 'none' }}>
-        <motion.div
-          key="migration"
-          initial={{ opacity: 0, x: direction * 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, ease: CONTENT_EASE }}
-        >
-          <MigrationTab trend={visibleTrend} />
+          <div
+            className="rounded-xl p-4"
+            style={{ backgroundColor: 'var(--color-bg)', boxShadow: 'var(--shadow-card)', marginBottom: 12 }}
+          >
+            <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)', marginBottom: 12 }}>
+              누적 증감 추이
+            </p>
+            <CumulativeChangeChart trend={visibleTrend} />
+          </div>
+          <NetChangeDisclosure />
         </motion.div>
       </Tabs.Content>
     </Tabs.Root>

@@ -27,6 +27,9 @@ function calcAgingIndex(groups: AgeGroup[]): number | null {
   return Math.round(elderly / youth * 100)
 }
 
+/** 연령 9구간 스켈레톤의 폭(%). 실제 분포처럼 보이도록 고르지 않게 잡았다. */
+const SKELETON_WIDTHS = [72, 88, 95, 91, 84, 78, 66, 52, 38]
+
 export function AgeCompareTab({ regionCode, currentAgeGroups, currentMonth, availableMonths }: Props) {
   const otherMonths = availableMonths.filter(m => m !== currentMonth)
   const curIdx = availableMonths.indexOf(currentMonth)
@@ -35,18 +38,26 @@ export function AgeCompareTab({ regionCode, currentAgeGroups, currentMonth, avai
     : otherMonths[0] ?? ''
 
   const [compareYm, setCompareYm] = useState(defaultCmpYm)
-  const [compareData, setCompareData] = useState<AgeGroup[] | null>(null)
-  const [loading, setLoading] = useState(false)
+  // 어떤 (지역, 월) 조합의 결과인지 함께 담는다. loading 을 별도 state 로 두면
+  // 이펙트 본문에서 동기 setState 를 하게 되고, 로드 결과가 null 인 경우
+  // (해당 월 데이터가 없는 지역) 로딩 중과 구분되지 않는다.
+  const [loaded, setLoaded] = useState<{ key: string; data: AgeGroup[] | null } | null>(null)
+
+  const key = compareYm ? `${regionCode}:${compareYm}` : null
+  const loading = key !== null && loaded?.key !== key
+  const compareData = loaded?.key === key ? loaded.data : null
 
   useEffect(() => {
     if (!compareYm) return
-    setLoading(true)
+    // 월을 빠르게 바꾸면 먼저 시작한 요청이 나중에 끝날 수 있다.
+    let cancelled = false
     fetchAgeGroups(regionCode, compareYm).then(data => {
+      if (cancelled) return
       startTransition(() => {
-        setCompareData(data)
-        setLoading(false)
+        setLoaded({ key: `${regionCode}:${compareYm}`, data })
       })
     })
+    return () => { cancelled = true }
   }, [regionCode, compareYm])
 
   const currentIndex = calcAgingIndex(currentAgeGroups)
@@ -154,8 +165,10 @@ export function AgeCompareTab({ regionCode, currentAgeGroups, currentMonth, avai
             transition={{ duration: 0.15 }}
             style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
           >
-            {Array.from({ length: 9 }).map((_, i) => (
-              <Skeleton key={i} height={20} width={`${60 + Math.random() * 35}%`} rounded={4} />
+            {/* 폭은 고정 배열에서 가져온다. Math.random 을 렌더 중에 부르면
+                재렌더마다 값이 흔들리고, 순수 렌더 규칙에도 어긋난다. */}
+            {SKELETON_WIDTHS.map((w, i) => (
+              <Skeleton key={i} height={20} width={`${w}%`} rounded={4} />
             ))}
           </motion.div>
         ) : (

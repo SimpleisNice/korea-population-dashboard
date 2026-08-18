@@ -152,25 +152,45 @@ export function CompareClient({
 
   const [regionA, setRegionA] = useState<Region | null>(initialA);
   const [regionB, setRegionB] = useState<Region | null>(initialB);
-  const [detailA, setDetailA] = useState<RegionDetail | null>(initialDetailA);
-  const [detailB, setDetailB] = useState<RegionDetail | null>(initialDetailB);
-  const [loadingA, setLoadingA] = useState(false);
-  const [loadingB, setLoadingB] = useState(false);
+  // 로드된 결과에 "어떤 (지역, 월) 조합인지"를 함께 담는다.
+  // loading 을 별도 state 로 두면 이펙트 본문에서 동기 setState 를 하게 되고,
+  // 결과가 null 인 경우(해당 월 데이터가 없는 지역)와 로딩 중이 구분되지 않는다.
+  const keyOf = (r: Region | null) => (r ? `${r.code}:${currentMonth}` : null);
+  type Loaded = { key: string; data: RegionDetail | null } | null;
+
+  const [loadedA, setLoadedA] = useState<Loaded>(
+    initialA ? { key: `${initialA.code}:${currentMonth}`, data: initialDetailA } : null,
+  );
+  const [loadedB, setLoadedB] = useState<Loaded>(
+    initialB ? { key: `${initialB.code}:${currentMonth}`, data: initialDetailB } : null,
+  );
+
+  const keyA = keyOf(regionA);
+  const keyB = keyOf(regionB);
+  const loadingA = keyA !== null && loadedA?.key !== keyA;
+  const loadingB = keyB !== null && loadedB?.key !== keyB;
+  const detailA = loadedA?.key === keyA ? loadedA.data : null;
+  const detailB = loadedB?.key === keyB ? loadedB.data : null;
 
   useEffect(() => {
-    if (!regionA) { startTransition(() => setDetailA(null)); return; }
-    setLoadingA(true);
-    fetchRegionDetail(regionA.code, currentMonth).then(d =>
-      startTransition(() => { setDetailA(d); setLoadingA(false); })
-    );
+    if (!regionA) return;
+    // 지역·월을 빠르게 바꾸면 먼저 시작한 요청이 나중에 끝날 수 있다.
+    let cancelled = false;
+    fetchRegionDetail(regionA.code, currentMonth).then(d => {
+      if (cancelled) return;
+      startTransition(() => setLoadedA({ key: `${regionA.code}:${currentMonth}`, data: d }));
+    });
+    return () => { cancelled = true; };
   }, [regionA, currentMonth]);
 
   useEffect(() => {
-    if (!regionB) { startTransition(() => setDetailB(null)); return; }
-    setLoadingB(true);
-    fetchRegionDetail(regionB.code, currentMonth).then(d =>
-      startTransition(() => { setDetailB(d); setLoadingB(false); })
-    );
+    if (!regionB) return;
+    let cancelled = false;
+    fetchRegionDetail(regionB.code, currentMonth).then(d => {
+      if (cancelled) return;
+      startTransition(() => setLoadedB({ key: `${regionB.code}:${currentMonth}`, data: d }));
+    });
+    return () => { cancelled = true; };
   }, [regionB, currentMonth]);
 
   useEffect(() => {

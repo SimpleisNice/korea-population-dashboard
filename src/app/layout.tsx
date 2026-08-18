@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     template: '%s | 인구통계',
     default: '부동산 인구통계 — 시군구 인구 현황',
   },
-  description: '부동산 구매 전 꼭 확인하는 시군구 인구 통계. 인구 추이, 세대수, 연령 구조, 전입출 현황을 한눈에 확인하세요.',
+  description: '부동산 구매 전 꼭 확인하는 시군구 인구 통계. 인구 추이, 세대수, 연령 구조, 인구 증감을 한눈에 확인하세요.',
   keywords: ['인구통계', '시군구 인구', '부동산', '인구 추이', '세대수'],
   verification: {
     google: process.env.NEXT_GOOGLE_SITE_VERIFICATION,

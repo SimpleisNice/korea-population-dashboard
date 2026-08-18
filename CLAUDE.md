@@ -35,7 +35,7 @@ npm run test       # build-data 후 vitest run
    - `*_주민등록인구및세대현황_월간.csv` — 인구·세대 (총인구·세대수·세대당인구·남자·여자)
    - `*_연령별인구현황_월간.csv` — 연령별 (10세 단위 11구간을 계/남/여로)
 
-   진짜 이동자 통계(전입/전출)는 이 저장소에 없다. 상세의 "전입출" 탭은 인구·세대 CSV의 월별 순증감에서 계산한 근사값이다(→ `docs/principles.md` A3). 실제 이동자 통계는 KOSIS 국내인구이동통계를 별도로 들여와야 한다.
+   진짜 이동자 통계(전입/전출)는 이 저장소에 없다. 상세의 "증감" 탭이 보여주는 값은 인구·세대 CSV의 월별 순증감이며 출생·사망이 섞여 있다(→ `docs/principles.md` A3). 실제 이동자 통계는 KOSIS 국내인구이동통계를 별도로 들여와야 한다.
 2. `scripts/csv-to-json.ts`(`npm run build-data`)가 시군구별 `public/data/regions/{code}.json`과 전체 목록 `index.json`을 생성
 3. `src/lib/data.ts`가 요청 시점에 `fs.readFileSync`로 읽고 집계(`getRegionDetail`, `getAllRegionRankings`, `getSidoStats` 등). 프로세스 메모리 캐시는 `index.json`과 일부 파생 결과뿐
 4. 데이터 페이지(`ranking`, `compare`, `[sido]/[sigungu]`, `.../detail`)는 async Server Component로 `await props.searchParams`(Next.js 16 패턴) 후 `data.ts`를 직접 호출 — **데이터용 API 라우트 없음**. 유일한 라우트 `src/app/api/og/route.tsx`는 OG 이미지 생성용
@@ -126,7 +126,7 @@ npm run test       # build-data 후 vitest run
 - **데이터 API 라우트 없음** — 집계는 Server Component 안에서 `src/lib/data.ts`의 `fs` 직접 읽기로 처리. `api/og`만 예외(OG 이미지)
 - **URL 상태(`nuqs`/searchParams)** — React state나 Context를 쓰지 않는다. 필터가 새로고침·공유에 살아남는다
 - **라이트·모바일 전용 UI** — 다크 모드·데스크톱 레이아웃 없음(의도된 결정). 최대 폭 430px(`--max-w`), `MobileShell` 래퍼. 디자인 토큰은 `src/app/globals.css`의 `@theme`
-- **하단 네비게이션** — `BottomNav` 4탭: 홈 / 지도 / 순위(트렌딩 포함) / 비교
+- **하단 네비게이션** — `BottomNav` 4탭: 홈 / 지도 / 순위(트렌딩 포함) / 비교. 지역 상세는 4탭: 인구추이 / 세대 / 연령 / 증감
 - **AdSense 운영 중** — `src/components/AdSlot.tsx`가 광고 유닛과 `adsbygoogle.js` 스크립트를 **함께** 렌더한다. 퍼블리셔 ID(`ca-pub-4466379680692265`)는 실 승인 ID로 컴포넌트와 `public/ads.txt`에 하드코딩. 슬롯 ID만 `NEXT_PUBLIC_ADSENSE_SLOT_BANNER` 환경변수. `slot`이 비었거나 `enabled={false}`면 `null`을 반환해 광고 유닛도 스크립트도 렌더하지 않는다
 - **`adsbygoogle.js`를 루트 레이아웃에 넣지 말 것.** 전역 로드 시 자동 광고(Auto Ads)가 지도·비교 빈 상태·지역 상세처럼 콘텐츠가 얇은 화면에도 광고를 삽입해 "게시자 콘텐츠가 없는 화면" 위반이 재발한다. 스크립트를 `AdSlot` 안에 둠으로써 **대시보드에서 자동 광고가 켜져 있어도 다른 화면에는 삽입될 수 없다**. 광고가 존재하는 페이지는 홈·`/ranking`·`/trending` 뿐이다
 

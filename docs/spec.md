@@ -1,6 +1,6 @@
 # 서비스 기능 명세
 
-> 최종 업데이트: 2026-08-18 (원천 CSV 형식 교체 반영)
+> 최종 업데이트: 2026-08-19 (P1-5 탭 통합 · P1-8 lint 해소)
 > 대상: `main` 브랜치 기준
 
 ---
@@ -88,7 +88,7 @@
 
 ### 2-3. 지역 상세 `/[sido]/[sigungu]/detail`
 
-**목적:** 추이·세대·연령·증감·전입출 심층 제공.
+**목적:** 추이·세대·연령·증감 심층 제공.
 
 **URL 파라미터:** `ym`(YYYYMM, 기본 최신월)
 
@@ -99,8 +99,9 @@
 | 인구추이 | 기간 토글 + 라인 차트(`TrendChart`) + 향후 6개월 선형회귀 예측 점선 + 최근 6개월 테이블 |
 | 세대 | 세대수·세대당 인구 카드 + 세대 인사이트 문단 + 세대수 추이 차트 |
 | 연령 | 심층 지표 카드 4개(`AgeInsightCards`) + 두 시점 연령 분포 오버레이(`AgeCompareTab` → `AgeChart`) |
-| 증감 | 기간 요약 카드 3개(순증감·증가한 달·감소한 달) + 월별 증감 막대(`ChangeChart`) |
-| 전입출 | 순이동 인사이트 + 월별 순이동 막대 + 누적 순이동 area (`MigrationTab`) — **인구·세대 CSV의 월별 순증감을 이용한 근사값**, 전입출 원본 CSV 미사용 |
+| 증감 | 기간 요약 카드 3개(순증감·증가한 달·감소한 달) + 순증감 판정 한 줄(`NetChangeInsight`) + 월별 증감 막대(`ChangeChart`) + 누적 증감 area(`CumulativeChangeChart`) + 데이터 성격 고지 |
+
+> **구 "전입출" 탭은 2026-08-19 증감 탭에 통합됐다 (P1-5).** 두 탭이 같은 `trend` 데이터로 같은 막대 차트를 두 번 그리고 있었고, "전입출"은 우리가 갖고 있지 않은 지표의 이름이었다. 탭 5개 → **4개**(`principles.md` A3·0-1).
 
 **연령 지표 계산 (10세 버킷 근사, 공식 통계 정의와 다름):**
 
@@ -115,7 +116,7 @@
 
 대신 **공식 지표명을 우리 근사치에 쓰지 않는다** — "노령화지수"가 아니라 "고령화 지수", "생산연령인구"가 아니라 "생산가능 비율". 같은 이름에 다른 계산식이 붙는 것이 가장 나쁜 상태다(`principles.md` A2). 툴팁에 "10세 단위 근사"로 고지되어 있다.
 
-**컴포넌트:** `DetailTabs`, `TrendChart`, `ChangeChart`, `MigrationTab`, `AgeChart`, `AgeCompareTab`, `AgeInsightCards`, `StatCard`, `MonthPicker`
+**컴포넌트:** `DetailTabs`, `TrendChart`, `ChangeChart`, `NetChangeTab`(`NetChangeInsight`·`CumulativeChangeChart`·`NetChangeDisclosure`), `AgeChart`, `AgeCompareTab`, `AgeInsightCards`, `StatCard`, `MonthPicker`
 
 ---
 
@@ -462,14 +463,24 @@ SidoStat        { sido, population, changeRate }        // data.ts에 정의
 
 ### ⚠️ 남은 항목
 
-| # | 결함 | 영향 | 처리 |
+### ✅ 해소됨 (P1-5·P1-8, 2026-08-19)
+
+| # | 결함 | 조치 | 검증 |
 |---|---|---|---|
-| **D16** | **`npm run lint`이 6 error + 1 warning으로 실패한다.** React 19 `react-hooks` 규칙 위반 — effect 안 동기 setState 4건(`CompareClient` ×2, `AgeCompareTab`, `BookmarkButton`), 렌더 중 impure 호출 1건(`AgeCompareTab:158`), 렌더 중 ref 접근 1건(`DetailTabs:68`), 미사용 import 1건(`DetailTabs`의 `AnimatePresence`) | 동작은 하지만 lint 게이트가 항상 빨간 상태라 새 위반을 못 잡는다 | P1-8 |
+| P1-5 | "전입출" 탭이 갖고 있지 않은 지표의 이름을 쓰고 있었고, "증감" 탭과 **같은 데이터로 같은 막대 차트를 두 번** 그렸다 | 두 탭을 증감 하나로 통합. 라벨을 전부 "증감"으로, 고지 문구에 순증감의 성격 명시 | 탭 5 → **4**, 중복 차트 제거 |
+| D16 | `npm run lint`이 6 error + 1 warning으로 실패 | 아래 표 참조 | **0건** |
+
+| 위반 | 조치 |
+|---|---|
+| `BookmarkButton` — effect 안 동기 setState | `useSyncExternalStore`로 전환. localStorage 는 React 밖 저장소이므로 이게 제 위치다. **다른 곳에서 즐겨찾기를 바꿔도 갱신**되는 부수 효과 |
+| `CompareClient` ×2, `AgeCompareTab` — effect 안 동기 `setLoading(true)` | loading 을 **파생 상태**로. `{key, data}` 로 "어떤 (지역, 월) 결과인지"를 함께 담아 **결과가 null 인 경우와 로딩 중을 구분**한다(폐지 지역에서 실제로 갈린다). 요청 취소도 함께 추가 |
+| `AgeCompareTab:158` — 렌더 중 `Math.random()` | 스켈레톤 폭을 고정 배열로 |
+| `DetailTabs:68` — 렌더 중 ref 접근 | 전환 방향을 탭 클릭 시점에 계산해 state 로 |
+| `DetailTabs:5` — 미사용 import | 제거 |
 
 ### 📋 남은 개선 (결함 아님)
 
 | # | 항목 | 처리 |
 |---|---|---|
-| P1-5 | "전입출" 탭 라벨이 실제 계산(순증감)과 다르다 | `principles.md` A3 |
 | P2-5 | 연령 데이터가 인구 데이터보다 1개월 뒤처지는데 연령 탭에 기준월 표기가 없다 | `principles.md` B1 |
 | — | 신설 지역 4개(인천)는 12개월이 쌓이기 전까지 YoY·판정이 비어 있다 | 2027.07에 자연 해소 |

@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     : undefined
 
   const description = pop
-    ? `${sidoName} ${sigunguName} 인구 ${pop.toLocaleString('ko-KR')}명${change !== undefined ? (change >= 0 ? ` (전월 대비 +${change.toLocaleString('ko-KR')}명)` : ` (전월 대비 ${change.toLocaleString('ko-KR')}명)`) : ''}. 인구 추이·세대수·연령 구조·전입출 현황을 확인하세요.`
+    ? `${sidoName} ${sigunguName} 인구 ${pop.toLocaleString('ko-KR')}명${change !== undefined ? (change >= 0 ? ` (전월 대비 +${change.toLocaleString('ko-KR')}명)` : ` (전월 대비 ${change.toLocaleString('ko-KR')}명)`) : ''}. 인구 추이·세대수·연령 구조·인구 증감을 확인하세요.`
     : `${sidoName} ${sigunguName} 인구 현황. 총인구, 세대수, 인구 추이를 확인하세요.`
 
   const ogImageParams = new URLSearchParams({ name: sigunguName, sido: sidoName })
