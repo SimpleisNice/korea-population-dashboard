@@ -73,6 +73,12 @@ export interface RegionRankEntry {
   popChange: number
   popChangeYoy: number
   popChangeRate: number
+  /**
+   * 세대 분화 — 세대수 증가율 − 인구 증가율 (전년 동월 대비, %포인트).
+   * 양수면 한 가구에 사는 사람 수가 줄고 있다는 뜻이다.
+   * 전년 동월 데이터가 없으면 null.
+   */
+  householdDivergence: number | null
   rank: RegionRank
 }
 

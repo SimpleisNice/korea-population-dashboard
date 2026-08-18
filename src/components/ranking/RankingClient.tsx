@@ -8,14 +8,15 @@ import { ChevronRight, TrendingUp } from 'lucide-react'
 import { regionPath } from '@/lib/utils'
 import type { RegionRankEntry } from '@/lib/types'
 
-type SortKey = 'population' | 'popChange' | 'popChangeRate' | 'households'
-const VALID_SORTS: SortKey[] = ['population', 'popChange', 'popChangeRate', 'households']
+type SortKey = 'population' | 'popChange' | 'popChangeRate' | 'households' | 'householdDivergence'
+const VALID_SORTS: SortKey[] = ['population', 'popChange', 'popChangeRate', 'households', 'householdDivergence']
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'population',    label: '총 인구' },
   { value: 'popChange',     label: '전월 증감' },
   { value: 'popChangeRate', label: '전년 증감률' },
   { value: 'households',    label: '세대수' },
+  { value: 'householdDivergence', label: '세대 분화' },
 ]
 
 const MEDALS = ['🥇', '🥈', '🥉']
@@ -62,6 +63,15 @@ export function RankingClient({ entries, sidos, ym, initialSort, initialSido }: 
     const filtered = sidoFilter === '전체' ? entries : entries.filter(e => e.region.sido === sidoFilter)
     return [...filtered].sort((a, b) => {
       if (sortKey === 'popChangeRate') return b.popChangeRate - a.popChangeRate
+      if (sortKey === 'householdDivergence') {
+        // 전년 데이터가 없는 지역(신설 등)은 값이 없다. 0 으로 취급하면 중간에 섞이므로 뒤로 보낸다.
+        const av = a.householdDivergence
+        const bv = b.householdDivergence
+        if (av === null && bv === null) return 0
+        if (av === null) return 1
+        if (bv === null) return -1
+        return bv - av
+      }
       return b[sortKey] - a[sortKey]
     })
   }, [entries, sortKey, sidoFilter])
@@ -72,11 +82,15 @@ export function RankingClient({ entries, sidos, ym, initialSort, initialSido }: 
     if (sortKey === 'population')    return sorted[0].population
     if (sortKey === 'households')    return sorted[0].households
     if (sortKey === 'popChange')     return Math.max(...sorted.map(e => Math.abs(e.popChange)), 1)
+    if (sortKey === 'householdDivergence') {
+      return Math.max(...sorted.map(e => Math.abs(e.householdDivergence ?? 0)), 1)
+    }
     return Math.max(...sorted.map(e => Math.abs(e.popChangeRate)), 1)
   }, [sorted, sortKey])
 
   function getValue(e: RegionRankEntry): number {
     if (sortKey === 'popChangeRate') return e.popChangeRate
+    if (sortKey === 'householdDivergence') return e.householdDivergence ?? 0
     return e[sortKey]
   }
 
@@ -84,6 +98,10 @@ export function RankingClient({ entries, sidos, ym, initialSort, initialSido }: 
     if (sortKey === 'population')    return e.population.toLocaleString('ko-KR') + '명'
     if (sortKey === 'households')    return e.households.toLocaleString('ko-KR') + '세대'
     if (sortKey === 'popChangeRate') return (e.popChangeRate >= 0 ? '+' : '') + e.popChangeRate.toFixed(2) + '%'
+    if (sortKey === 'householdDivergence') {
+      const d = e.householdDivergence
+      return d === null ? '—' : (d >= 0 ? '+' : '') + d.toFixed(2) + '%p'
+    }
     const v = e.popChange
     return (v >= 0 ? '+' : '') + v.toLocaleString('ko-KR') + '명'
   }
@@ -128,6 +146,23 @@ export function RankingClient({ entries, sidos, ym, initialSort, initialSido }: 
           )
         })}
       </div>
+
+      {/* 생소한 지표에는 무엇을 보는 값인지 한 줄로 남긴다 (principles.md A3) */}
+      {sortKey === 'householdDivergence' && (
+        <p
+          className="text-[12px] leading-relaxed rounded-xl"
+          style={{
+            color: 'var(--color-text-secondary)',
+            backgroundColor: 'var(--color-surface)',
+            padding: '10px 12px',
+            marginBottom: 10,
+          }}
+        >
+          <strong style={{ color: 'var(--color-text-primary)' }}>세대 분화</strong> = 세대수 증가율 − 인구 증가율(전년 대비).
+          값이 클수록 한 가구에 사는 사람 수가 빠르게 줄고 있다는 뜻으로, 1~2인 가구 전환이 진행 중인 지역입니다.
+          총인구만 보면 놓치는 신호라 소형 주거 수요를 가늠할 때 씁니다.
+        </p>
+      )}
 
       {/* ── 시도 필터 (pill chips) ── */}
       <div style={{ position: 'relative', marginBottom: 16 }}>

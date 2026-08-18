@@ -323,6 +323,14 @@ export function getAllRegionRankings(ym: string): RegionRankEntry[] {
       popChangeRate: yoyStats && yoyStats.population > 0
         ? ((stats.population - yoyStats.population) / yoyStats.population) * 100
         : 0,
+      // 세대 분화: 세대수 증가율 − 인구 증가율.
+      // 인구·세대 두 시계열을 조합한 값으로, KOSIS 가 제공하지 않는 지표다
+      // (docs/backlog.md N-2). 지역 상세의 서술과 같은 정의를 쓴다.
+      householdDivergence:
+        yoyStats && yoyStats.population > 0 && yoyStats.households > 0
+          ? ((stats.households - yoyStats.households) / yoyStats.households) * 100
+            - ((stats.population - yoyStats.population) / yoyStats.population) * 100
+          : null,
       rank,
     })
   }

@@ -15,11 +15,11 @@ npm run lint       # ESLint
 npm run test       # build-data 후 vitest run
 ```
 
-테스트는 총 84개다.
+테스트는 총 87개다.
 
 | 파일 | 개수 | 지키는 것 |
 |---|---:|---|
-| `src/lib/data.test.ts` | 28 | 빌드 산출물 회귀. 각 테스트가 `docs/spec.md` §5 결함 번호에 대응 |
+| `src/lib/data.test.ts` | 31 | 빌드 산출물 회귀. 각 테스트가 `docs/spec.md` §5 결함 번호에 대응 |
 | `scripts/lib/mois-csv.test.ts` | 31 | CSV 파싱 규칙 자체. 고정 입력 문자열을 쓰므로 원본이 바뀌어도 유효 |
 | `src/lib/region-narrative.test.ts` | 8 | 서술이 고정 템플릿으로 수렴하지 않는지 |
 | `src/lib/monthly-report.test.ts` | 17 | 월간 리포트 — 수치 정합성·개편 감지·서술 다양성 |

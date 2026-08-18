@@ -270,6 +270,50 @@ describe('행정구역 개편 — 폐지 지역 (2026.07 인천 분할)', () => 
   })
 })
 
+describe('세대 분화 지표 (N-2)', () => {
+  const latestYm = getAvailableMonths().at(-1)!
+  const entries = getAllRegionRankings(latestYm)
+
+  it('세대수 증가율 − 인구 증가율로 계산된다', () => {
+    const months = getAvailableMonths()
+    const yoyYm = months[months.length - 13]
+    let checked = 0
+    for (const e of entries.slice(0, 30)) {
+      const json = JSON.parse(
+        fs.readFileSync(path.join(REGIONS_DIR, `${e.region.code}.json`), 'utf-8'),
+      ) as { months: Record<string, { population: number; households: number }> }
+      const yoy = json.months[yoyYm]
+      if (!yoy || yoy.population === 0 || yoy.households === 0) {
+        expect(e.householdDivergence, `${e.region.sigungu}`).toBeNull()
+        continue
+      }
+      const cur = json.months[latestYm]
+      const expected =
+        ((cur.households - yoy.households) / yoy.households) * 100 -
+        ((cur.population - yoy.population) / yoy.population) * 100
+      expect(e.householdDivergence!, `${e.region.sigungu}`).toBeCloseTo(expected, 6)
+      checked++
+    }
+    expect(checked).toBeGreaterThan(0)
+  })
+
+  it('전년 데이터가 없는 신설 지역은 null 이다', () => {
+    // 2026.07 인천 신설 4곳은 1개월치뿐이라 전년 비교가 불가능하다
+    const newborn = entries.filter(e => ['2812500000', '2815500000', '2827500000', '2829000000'].includes(e.region.code))
+    expect(newborn.length).toBeGreaterThan(0)
+    for (const e of newborn) expect(e.householdDivergence, e.region.sigungu).toBeNull()
+  })
+
+  it('값이 실제로 지역마다 갈린다 — 상수가 아니다', () => {
+    const vals = entries.map(e => e.householdDivergence).filter((v): v is number => v !== null)
+    expect(vals.length).toBeGreaterThan(100)
+    expect(new Set(vals.map(v => v.toFixed(1))).size).toBeGreaterThanOrEqual(5)
+    // 대부분 양수(1인 가구 증가라는 전국 추세)지만 반대인 지역도 있어야 한다
+    expect(vals.some(v => v > 0)).toBe(true)
+    expect(vals.some(v => v < 0)).toBe(true)
+  })
+})
+
 describe('시도명 ↔ 지도 매핑', () => {
   it('지도의 모든 시도명이 실제 집계 결과에 존재한다', () => {
     // 어긋나면 해당 도형만 조용히 회색으로 남는다 — 화면만 봐서는 못 잡는다.
