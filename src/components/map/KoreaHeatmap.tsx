@@ -5,29 +5,13 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
 import SouthKorea from '@svg-maps/south-korea'
 import type { SidoStat } from '@/lib/data'
+import { SVG_ID_TO_SIDO } from '@/lib/sido-map'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 
 const EASE = [0.25, 0.46, 0.45, 0.94] as [number, number, number, number]
 
-const ID_TO_SIDO: Record<string, string> = {
-  'seoul':               '서울특별시',
-  'busan':               '부산광역시',
-  'daegu':               '대구광역시',
-  'incheon':             '인천광역시',
-  'gwangju':             '광주광역시',
-  'daejeon':             '대전광역시',
-  'ulsan':               '울산광역시',
-  'sejong':              '세종특별자치시',
-  'gyeonggi':            '경기도',
-  'gangwon':             '강원특별자치도',
-  'north-chungcheong':   '충청북도',
-  'south-chungcheong':   '충청남도',
-  'north-jeolla':        '전북특별자치도',
-  'south-jeolla':        '전라남도',
-  'north-gyeongsang':    '경상북도',
-  'south-gyeongsang':    '경상남도',
-  'jeju':                '제주특별자치도',
-}
+// 시도명 매핑은 테스트로 고정하기 위해 순수 모듈에 있다 (src/lib/sido-map.ts)
+const ID_TO_SIDO = SVG_ID_TO_SIDO
 
 function interpolateHex(from: string, to: string, t: number): string {
   const f = parseInt(from.slice(1), 16)

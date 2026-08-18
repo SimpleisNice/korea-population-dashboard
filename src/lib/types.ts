@@ -11,11 +11,17 @@ export interface Region {
   sido: string
   sigungu: string
   level: RegionLevel
+  /**
+   * 행정구역 분할 개편으로 폐지된 지역의 마지막 데이터 월('YYYYMM').
+   * 현행 지역에는 없다. 이력 조회는 되지만 최신월 데이터가 없어
+   * 순위·전국 합계에서는 무폴백 규칙에 의해 자동 제외된다(principles.md A4-1).
+   */
+  retiredAfter?: string
+  /** 폐지 지역을 승계한 현행 지역 코드들. 지역 페이지에서 안내 링크로 쓴다. */
+  successorCodes?: string[]
 }
 
 export interface MonthlyStats {
-  year: number
-  month: number
   population: number
   households: number
   householdSize: number

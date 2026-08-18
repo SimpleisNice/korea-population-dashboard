@@ -192,7 +192,12 @@ export function getRegionDetail(code: string, refMonth?: string, range = 12): Re
   const sortedKeys = Object.keys(months).sort()
   if (sortedKeys.length === 0) return null
 
+  // 기준월을 지정했는데 그 달 데이터가 없으면 null 이다. 그 지역의 마지막 달로
+  // 되돌리면 화면은 '2026년 7월'이라고 쓰면서 6월 수치를 보여주게 된다 — 기준월을
+  // 명시한 화면에 다른 시점을 섞으면 화면 전체가 틀린 것이 된다(principles.md A4-1).
+  // 개편으로 폐지된 지역(Region.retiredAfter)이 정확히 이 경로를 탄다.
   const refIdx = refMonth ? sortedKeys.indexOf(refMonth) : -1
+  if (refMonth && refIdx < 0) return null
   const endIdx = refIdx >= 0 ? refIdx : sortedKeys.length - 1
   const windowSize = range <= 0 ? endIdx + 1 : Math.min(range, endIdx + 1)
   const startIdx = endIdx - windowSize + 1

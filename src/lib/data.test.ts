@@ -18,54 +18,50 @@ import {
   getSidoStats,
   getChildDistricts,
   getRegionBySlug,
+  getRegionDetail,
 } from './data'
+import {
+  decodeCSV,
+  splitCSVLine,
+  parseRegionCell,
+  parseNum,
+  isSidoRow,
+  classifyRawFile,
+} from '../../scripts/lib/mois-csv'
+import { SVG_ID_TO_SIDO } from './sido-map'
 
 const REGIONS_DIR = path.join(process.cwd(), 'public', 'data', 'regions')
 const RAW_DIR = path.join(process.cwd(), 'data', 'raw')
 
-// ── MOIS 공식 전국 합계 ───────────────────────────────────────────────────────
-// *_other_population_change_monthly.csv 에는 전국(1000000000) 합계 행이 들어 있다.
-// 우리 집계가 이 값에서 크게 벗어나면 계층 혼재나 누락이 생긴 것이다.
+// ── MOIS 공식 합계 (독립 검증 기준값) ────────────────────────────────────────
+// 원본 CSV 에는 코드가 00000000 으로 끝나는 시도 합계 행이 들어 있다.
+// MOIS 가 직접 집계한 값이므로, 우리가 시군구를 더한 값과 대조하면 독립 검증이 된다
+// (docs/principles.md A3-1). D1(일반구 이중 계상, 전국 총인구 +20.6%)을 잡는 테스트다.
+//
+// 파서와 같은 모듈을 쓰지 않고 여기서 직접 읽는다 — 파서 버그가 기준값까지 함께
+// 오염시키면 대조가 무의미해진다.
 
-function splitCSVLine(line: string): string[] {
-  const out: string[] = []
-  let cur = ''
-  let quoted = false
-  for (const ch of line) {
-    if (ch === '"') quoted = !quoted
-    else if (ch === ',' && !quoted) { out.push(cur.trim()); cur = '' }
-    else cur += ch
-  }
-  out.push(cur.trim())
-  return out
-}
-
-/** 해당 연월의 MOIS 공식 전국 인구를 원본 CSV에서 읽는다. 없으면 null. */
+/** 해당 연월의 시도 합계 행을 모두 더한다. 그 달이 원본에 없으면 null. */
 function officialNationalTotal(ym: string): number | null {
-  const files = fs.readdirSync(RAW_DIR)
-    .filter(f => /_registered_population_other_population_change_monthly\.csv$/.test(f))
+  const files = fs.readdirSync(RAW_DIR).filter(f => classifyRawFile(f) === 'population')
+  const header = `${ym.slice(0, 4)}년${ym.slice(4)}월_거주자 인구수`
 
   for (const file of files) {
-    const text = fs.readFileSync(path.join(RAW_DIR, file), 'utf-8').replace(/^﻿/, '')
+    const text = decodeCSV(fs.readFileSync(path.join(RAW_DIR, file)))
     const lines = text.split(/\r?\n/).filter(l => l.trim())
-    const monthRow = splitCSVLine(lines[1] ?? '')
+    const col = splitCSVLine(lines[0]).findIndex(h => h.normalize('NFC') === header)
+    if (col < 0) continue
 
-    // 월 블록은 9칸(전월 남/여/계, 당월 남/여/계, 증감 남/여/계)이며
-    // '당월인구수 계'는 블록 시작에서 +5 위치다.
-    let colOffset = -1
-    for (let i = 2; i < monthRow.length; i++) {
-      const m = monthRow[i].match(/(\d{4})년(\d{2})월/)
-      if (m && `${m[1]}${m[2]}` === ym) { colOffset = i; break }
+    let sum = 0
+    let found = 0
+    for (const line of lines.slice(1)) {
+      const cells = splitCSVLine(line)
+      const region = parseRegionCell(cells[0] ?? '')
+      if (!region || !isSidoRow(region.code)) continue
+      sum += parseNum(cells[col]) ?? 0
+      found++
     }
-    if (colOffset < 0) continue
-
-    for (const line of lines.slice(4)) {
-      const cols = splitCSVLine(line)
-      if (cols[0].replace(/\s/g, '') !== '1000000000') continue
-      const raw = cols[colOffset + 5] ?? ''
-      const n = parseInt(raw.replace(/,/g, ''), 10)
-      return Number.isFinite(n) ? n : null
-    }
+    return found > 0 ? sum : null
   }
   return null
 }
@@ -226,6 +222,66 @@ describe('연월 목록 (D11)', () => {
       ) as { months: Record<string, unknown> }
       for (const ym of Object.keys(json.months)) expect(known.has(ym)).toBe(true)
     }
+  })
+})
+
+describe('행정구역 개편 — 폐지 지역 (2026.07 인천 분할)', () => {
+  const latestYm = getAvailableMonths().at(-1)!
+  const retired = () => getAllRegions().filter(r => r.retiredAfter)
+
+  it('폐지 지역은 마지막 데이터 월과 승계 지역을 갖는다', () => {
+    const list = retired()
+    expect(list.length).toBeGreaterThan(0)
+    for (const r of list) {
+      expect(r.retiredAfter! < latestYm, `${r.sigungu}`).toBe(true)
+      expect(r.successorCodes?.length ?? 0).toBeGreaterThan(0)
+    }
+  })
+
+  it('승계 지역은 실제로 존재하는 현행 지역이다', () => {
+    const byCode = new Map(getAllRegions().map(r => [r.code, r]))
+    for (const r of retired()) {
+      for (const code of r.successorCodes ?? []) {
+        const s = byCode.get(code)
+        expect(s, `${r.sigungu} 의 승계 지역 ${code} 가 없다`).toBeDefined()
+        expect(s!.retiredAfter).toBeUndefined()
+      }
+    }
+  })
+
+  it('폐지 지역은 최신월 순위·합계에서 빠진다', () => {
+    const ranked = new Set(getAllRegionRankings(latestYm).map(e => e.region.code))
+    for (const r of retired()) expect(ranked.has(r.code), `${r.sigungu}`).toBe(false)
+  })
+
+  it('폐지 지역의 과거 이력은 그대로 조회된다', () => {
+    for (const r of retired()) {
+      const detail = getRegionDetail(r.code, r.retiredAfter!, 12)
+      expect(detail, `${r.sigungu} 의 ${r.retiredAfter} 이력이 없다`).not.toBeNull()
+      expect(detail!.latest.population).toBeGreaterThan(0)
+    }
+  })
+
+  it('기준월 데이터가 없으면 다른 달로 폴백하지 않는다 (A4-1)', () => {
+    // 폴백이 살아 있으면 화면은 '2026년 7월'이라 쓰면서 6월 수치를 보여준다.
+    for (const r of retired()) {
+      expect(getRegionDetail(r.code, latestYm, 12), `${r.sigungu}`).toBeNull()
+    }
+  })
+})
+
+describe('시도명 ↔ 지도 매핑', () => {
+  it('지도의 모든 시도명이 실제 집계 결과에 존재한다', () => {
+    // 어긋나면 해당 도형만 조용히 회색으로 남는다 — 화면만 봐서는 못 잡는다.
+    const actual = new Set(getSidoStats().map(s => s.sido))
+    const missing = [...new Set(Object.values(SVG_ID_TO_SIDO))].filter(s => !actual.has(s))
+    expect(missing).toEqual([])
+  })
+
+  it('집계에 있는 모든 시도가 지도에 그려진다', () => {
+    const mapped = new Set(Object.values(SVG_ID_TO_SIDO))
+    const unmapped = getSidoStats().map(s => s.sido).filter(s => !mapped.has(s))
+    expect(unmapped).toEqual([])
   })
 })
 

@@ -1,252 +1,200 @@
 /**
  * CSV → JSON 변환 스크립트
- * 실행: npm run build-data
+ * 실행: npm run build-data (dev/build/test 전에 자동 실행됨)
  *
- * public/data/*.csv 를 읽어 public/data/regions/ 에 시군구별 JSON 파일 생성
+ * data/raw/*.csv 를 읽어 public/data/regions/ 에 시군구별 JSON 파일 생성
  *   - public/data/regions/index.json   (전체 지역 목록)
  *   - public/data/regions/[code].json  (지역별 통계)
+ *
+ * 파싱 로직은 scripts/lib/mois-csv.ts, 행정 코드 체계는 scripts/lib/region-codes.ts 에 있다.
+ * 이 파일은 파일 읽기·병합·계층 판별·쓰기만 담당한다.
+ *
+ * 빌드/개발 시점에만 실행되고 런타임에는 돌지 않는다.
  */
 
 import fs from 'fs'
 import path from 'path'
+import {
+  decodeCSV,
+  parsePopulationCSV,
+  parseAgeCSV,
+  classifyRawFile,
+  isSigunguRow,
+  isSidoRow,
+  type MonthlyStats,
+  type AgeGroup,
+} from './lib/mois-csv'
+import {
+  canonicalCode,
+  sidoOf,
+  stripSidoPrefix,
+  SPLIT_SUCCESSORS,
+} from './lib/region-codes'
 
 // ── 타입 ─────────────────────────────────────────────────────────────────────
 
 type RegionLevel = 'sigungu' | 'district'
-interface Region { code: string; sido: string; sigungu: string; level: RegionLevel }
-// level 은 전체 지역 목록이 모여야 판별할 수 있으므로 파싱 단계에서는 제외한다.
-type RegionRaw = Omit<Region, 'level'>
-interface MonthlyStats { year: number; month: number; population: number; households: number; householdSize: number; male: number; female: number }
-interface AgeGroup { label: string; male: number; female: number }
-interface RegionJSON { region: Region; months: Record<string, MonthlyStats>; ages: Record<string, AgeGroup[]> }
 
-// ── CSV 파싱 유틸 ─────────────────────────────────────────────────────────────
-
-const SIDO_BY_PREFIX: Record<string, string> = {
-  '11': '서울특별시', '26': '부산광역시', '27': '대구광역시', '28': '인천광역시',
-  '29': '광주광역시', '30': '대전광역시', '31': '울산광역시', '36': '세종특별자치시',
-  '41': '경기도',
-  '42': '강원특별자치도', // 구 코드 (2023.06 이전)
-  '43': '충청북도', '44': '충청남도',
-  '45': '전북특별자치도', // 구 코드 (2023.12 이전)
-  '46': '전라남도', '47': '경상북도', '48': '경상남도', '50': '제주특별자치도',
-  '51': '강원특별자치도', // 신 코드 (2023.07~)
-  '52': '전북특별자치도', // 신 코드 (2024.01~)
+interface Region {
+  code: string
+  sido: string
+  sigungu: string
+  level: RegionLevel
+  /** 개편으로 폐지된 지역의 마지막 데이터 월. 현행 지역에는 없다. */
+  retiredAfter?: string
+  /** 폐지 지역을 승계한 현행 지역 코드들. */
+  successorCodes?: string[]
 }
 
-// ── 행정구역 개편 코드 매핑 ──────────────────────────────────────────────────
-// 개편 전 구 코드 → 개편 후 신 코드
-// 구 코드 데이터를 신 코드 JSON에 병합하여 시계열 연속성을 유지한다.
-//
-// ① 강원특별자치도 (2023.06.11 개편: 강원도 → 강원특별자치도, 42xx → 51xx)
-// ② 전북특별자치도 (2024.01.18 개편: 전라북도 → 전북특별자치도, 45xx → 52xx)
-// ③ 군위군 (2023.07.01 편입: 경상북도 → 대구광역시, 4772 → 2772)
-//
-// 새 개편이 공표되면 여기에 매핑을 추가하는 것이 데이터 갱신 절차의 일부다.
-// 누락하면 구 코드 지역이 개편 시점에 멈춘 유령 지역으로 남는다 (docs/principles.md A4-1).
-const LEGACY_CODE_MAP: Record<string, string> = {
-  // 강원특별자치도
-  '4211000000': '5111000000', // 춘천시
-  '4213000000': '5113000000', // 원주시
-  '4215000000': '5115000000', // 강릉시
-  '4217000000': '5117000000', // 동해시
-  '4219000000': '5119000000', // 태백시
-  '4221000000': '5121000000', // 속초시
-  '4223000000': '5123000000', // 삼척시
-  '4272000000': '5172000000', // 홍천군
-  '4273000000': '5173000000', // 횡성군
-  '4275000000': '5175000000', // 영월군
-  '4276000000': '5176000000', // 평창군
-  '4277000000': '5177000000', // 정선군
-  '4278000000': '5178000000', // 철원군
-  '4279000000': '5179000000', // 화천군
-  '4280000000': '5180000000', // 양구군
-  '4281000000': '5181000000', // 인제군
-  '4282000000': '5182000000', // 고성군
-  '4283000000': '5183000000', // 양양군
-  // 전북특별자치도
-  '4511000000': '5211000000', // 전주시
-  '4511100000': '5211100000', // 전주시 완산구
-  '4511300000': '5211300000', // 전주시 덕진구
-  '4513000000': '5213000000', // 군산시
-  '4514000000': '5214000000', // 익산시
-  '4518000000': '5218000000', // 정읍시
-  '4519000000': '5219000000', // 남원시
-  '4521000000': '5221000000', // 김제시
-  '4571000000': '5271000000', // 완주군
-  '4572000000': '5272000000', // 진안군
-  '4573000000': '5273000000', // 무주군
-  '4574000000': '5274000000', // 장수군
-  '4575000000': '5275000000', // 임실군
-  '4577000000': '5277000000', // 순창군
-  '4579000000': '5279000000', // 고창군
-  '4580000000': '5280000000', // 부안군
-  // 대구광역시 편입
-  '4772000000': '2772000000', // 군위군
+/** level·retired 는 전체 목록이 모여야 판별할 수 있어 파싱 단계에서는 제외한다. */
+type RegionRaw = Pick<Region, 'code' | 'sido' | 'sigungu'>
+
+interface RegionJSON {
+  region: Region
+  months: Record<string, MonthlyStats>
+  ages: Record<string, AgeGroup[]>
 }
 
-function canonicalCode(raw: string): string {
-  return LEGACY_CODE_MAP[raw] ?? raw
-}
-
-function splitCSVLine(line: string): string[] {
-  const result: string[] = []
-  let current = ''
-  let inQuote = false
-  for (const ch of line) {
-    if (ch === '"') { inQuote = !inQuote }
-    else if (ch === ',' && !inQuote) { result.push(current.trim()); current = '' }
-    else { current += ch }
-  }
-  result.push(current.trim())
-  return result
-}
-
-function parseNum(s: string): number {
-  return parseInt(s.replace(/[,\s]/g, ''), 10) || 0
-}
-
-function parseMoisCSV(content: string) {
-  const text = content.startsWith('﻿') ? content.slice(1) : content
-  const lines = text.split(/\r?\n/).filter(l => l.trim())
-  const monthRow = splitCSVLine(lines[1])
-  const months: Array<{ colOffset: number; year: number; month: number; key: string }> = []
-  for (let i = 2; i < monthRow.length; i++) {
-    const m = monthRow[i].match(/(\d{4})년(\d{2})월/)
-    if (m) months.push({ colOffset: i, year: +m[1], month: +m[2], key: `${m[1]}${m[2]}` })
-  }
-  const regions: RegionRaw[] = []
-  const data = new Map<string, Map<string, MonthlyStats>>()
-  for (let rowIdx = 3; rowIdx < lines.length; rowIdx++) {
-    const cols = splitCSVLine(lines[rowIdx])
-    const rawCode = cols[0].replace(/\s/g, '')
-    if (!/^\d{10}$/.test(rawCode) || rawCode.endsWith('00000000')) continue
-    const sido = SIDO_BY_PREFIX[rawCode.slice(0, 2)]
-    if (!sido) continue
-    const code = canonicalCode(rawCode)
-    // sido는 canonical code 기준으로 재산출 (구 42xx → 신 51xx 이후에도 '강원특별자치도' 유지)
-    const canonicalSido = SIDO_BY_PREFIX[code.slice(0, 2)] ?? sido
-    const rawName = cols[1].replace(/\s+/g, ' ').trim()
-    // 시도명 접두사 제거 (구 이름 포함): rawName 에서 현재/과거 시도명 모두 시도
-    let sigungu = rawName
-    for (const prefix of [canonicalSido, sido]) {
-      if (sigungu.startsWith(prefix)) { sigungu = sigungu.slice(prefix.length).trim(); break }
-    }
-    // 하위 시군구가 없는 시도(세종특별자치시)는 접두사 제거 후 빈 문자열이 된다.
-    // 빈 sigungu 는 /[sido]/[sigungu] 라우트를 만들 수 없어 404가 되므로 시도명으로 채운다.
-    if (!sigungu) sigungu = canonicalSido
-    // 이미 존재하는 지역이 있으면 이름을 덮어쓰지 않음 (신 코드 CSV의 clean한 이름 우선)
-    // — 파일 처리 순서가 오름차순이므로 신 코드 파일이 나중에 처리되어 자동으로 덮어씀
-    regions.push({ code, sido: canonicalSido, sigungu })
-    // 같은 canonical code가 한 CSV 안에 구 코드·신 코드 두 번 나올 수 있으므로 병합
-    if (!data.has(code)) data.set(code, new Map())
-    const monthMap = data.get(code)!
-    for (const m of months) {
-      const b = m.colOffset
-      if (b + 4 >= cols.length) continue
-      const population = parseNum(cols[b])
-      if (!population) continue
-      monthMap.set(m.key, { year: m.year, month: m.month, population, households: parseNum(cols[b+1]), householdSize: parseFloat(cols[b+2]) || 0, male: parseNum(cols[b+3]), female: parseNum(cols[b+4]) })
-    }
-  }
-  return { regions, data }
-}
-
-function parseAgeCSV(content: string) {
-  const text = content.startsWith('﻿') ? content.slice(1) : content
-  const lines = text.split(/\r?\n/).filter(l => l.trim())
-  const monthRow = splitCSVLine(lines[1])
-  const months: Array<{ colOffset: number; key: string }> = []
-  for (let i = 2; i < monthRow.length; i++) {
-    const m = monthRow[i].match(/(\d{4})년(\d{2})월/)
-    if (m) months.push({ colOffset: i, key: `${m[1]}${m[2]}` })
-  }
-  const data = new Map<string, Map<string, AgeGroup[]>>()
-  for (let rowIdx = 4; rowIdx < lines.length; rowIdx++) {
-    const cols = splitCSVLine(lines[rowIdx])
-    const rawCode = cols[0].replace(/\s/g, '')
-    if (!/^\d{10}$/.test(rawCode) || rawCode.endsWith('00000000')) continue
-    if (!SIDO_BY_PREFIX[rawCode.slice(0, 2)]) continue
-    const code = canonicalCode(rawCode)
-    const monthMap = data.get(code) ?? new Map<string, AgeGroup[]>()
-    for (const { colOffset: b, key } of months) {
-      if (b + 38 >= cols.length) continue
-      const g = (i: number) => parseNum(cols[i] ?? '0')
-      const ageGroups: AgeGroup[] = [
-        { label: '0–9',   male: g(b+15), female: g(b+28) },
-        { label: '10–19', male: g(b+16), female: g(b+29) },
-        { label: '20–29', male: g(b+17), female: g(b+30) },
-        { label: '30–39', male: g(b+18), female: g(b+31) },
-        { label: '40–49', male: g(b+19), female: g(b+32) },
-        { label: '50–59', male: g(b+20), female: g(b+33) },
-        { label: '60–69', male: g(b+21), female: g(b+34) },
-        { label: '70–79', male: g(b+22), female: g(b+35) },
-        { label: '80+',   male: g(b+23)+g(b+24)+g(b+25), female: g(b+36)+g(b+37)+g(b+38) },
-      ]
-      if (ageGroups[0].male + ageGroups[0].female === 0) continue
-      monthMap.set(key, ageGroups)
-    }
-    data.set(code, monthMap)
-  }
-  return { data }
-}
-
-// ── 메인 ─────────────────────────────────────────────────────────────────────
+// ── 경로 ─────────────────────────────────────────────────────────────────────
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'raw')
-const OUT_DIR  = path.join(process.cwd(), 'public', 'data', 'regions')
+const OUT_DIR = path.join(process.cwd(), 'public', 'data', 'regions')
 
-// 출력 디렉터리를 매번 비운다. 그러지 않으면 행정구역 개편으로 사라진 구 코드 JSON이
-// 계속 남아 저장소를 오염시킨다 (docs/principles.md A4).
-fs.rmSync(OUT_DIR, { recursive: true, force: true })
-fs.mkdirSync(OUT_DIR, { recursive: true })
+/** 계층 판별이 조용히 어긋나는 것을 막는 가드. 개편으로 바뀌면 확인 후 갱신한다. */
+const EXPECTED_ACTIVE_TOP_LEVEL = 230
 
-// 1. 인구/세대 CSV
-const popFiles = fs.readdirSync(DATA_DIR)
-  .filter(f => /^\d{4}_(first|second)_half_registered_population_and_household_monthly\.csv$/.test(f))
-  .sort()
+function fail(message: string): never {
+  console.error(`\n❌ build-data 중단: ${message}\n`)
+  process.exit(1)
+}
+
+// ── 1. 원본 파일 수집 ────────────────────────────────────────────────────────
+
+if (!fs.existsSync(DATA_DIR)) fail(`원본 디렉터리가 없습니다: ${DATA_DIR}`)
+
+const allFiles = fs.readdirSync(DATA_DIR).sort()
+const popFiles = allFiles.filter(f => classifyRawFile(f) === 'population')
+const ageFiles = allFiles.filter(f => classifyRawFile(f) === 'age')
+
+// 읽은 파일이 0개면 출력 디렉터리를 비우기 **전에** 실패시킨다.
+// 이 순서를 뒤집으면 형식이 안 맞을 때 커밋된 산출물을 지우고 빈 index 만 남긴다
+// (docs/spec.md D14 가 정확히 그 상태였다 — docs/principles.md A5).
+if (popFiles.length === 0) {
+  fail(
+    `data/raw 에서 인구·세대 CSV 를 찾지 못했습니다 (전체 ${allFiles.length}개 파일).\n` +
+    `   기대하는 파일명: *주민등록인구및세대현황*.csv\n` +
+    `   MOIS 다운로드 형식이 바뀌었을 수 있습니다. npm run check-raw 로 확인하세요.`,
+  )
+}
+if (ageFiles.length === 0) {
+  fail(
+    `data/raw 에서 연령별 CSV 를 찾지 못했습니다.\n` +
+    `   기대하는 파일명: *연령별인구현황*.csv`,
+  )
+}
+
+const read = (file: string) => decodeCSV(fs.readFileSync(path.join(DATA_DIR, file)))
+
+// ── 2. 인구·세대 파싱 ────────────────────────────────────────────────────────
 
 const regionMap = new Map<string, RegionRaw>()
 const monthsMap = new Map<string, Map<string, MonthlyStats>>()
+/** 시도 합계 행. 집계 대상은 아니지만 검증 기준값으로 출력한다. */
+const sidoTotals = new Map<string, number>()
+let droppedEupMyeonDong = 0
+const unknownPrefixes = new Set<string>()
 
 for (const file of popFiles) {
-  const { regions, data } = parseMoisCSV(fs.readFileSync(path.join(DATA_DIR, file), 'utf-8'))
-  for (const r of regions) regionMap.set(r.code, r)
-  for (const [code, monthData] of data) {
+  const { rows, unknownFields } = parsePopulationCSV(read(file))
+  if (unknownFields.length > 0) {
+    console.warn(`⚠️  ${file}: 알 수 없는 컬럼 ${unknownFields.join(', ')}`)
+  }
+
+  for (const row of rows) {
+    if (isSidoRow(row.code)) {
+      for (const [ym, stats] of row.months) {
+        sidoTotals.set(ym, (sidoTotals.get(ym) ?? 0) + stats.population)
+      }
+      continue
+    }
+    // 읍면동이 섞여 들어오면(다운로드 설정 실수) 상위 단위와 이중 계상된다.
+    if (!isSigunguRow(row.code)) { droppedEupMyeonDong++; continue }
+
+    const rawSido = sidoOf(row.code)
+    if (!rawSido) { unknownPrefixes.add(row.code.slice(0, 2)); continue }
+
+    const code = canonicalCode(row.code)
+    // 시도명은 canonical code 기준으로 재산출한다.
+    // 구 42xx 행도 병합 후에는 '강원특별자치도'로 표기되어야 한다.
+    const sido = sidoOf(code) ?? rawSido
+    let sigungu = stripSidoPrefix(row.name, sido, rawSido)
+    // 하위 시군구가 없는 시도(세종특별자치시)는 접두사를 떼면 빈 문자열이 된다.
+    // 빈 sigungu 는 /[sido]/[sigungu] 라우트를 만들 수 없어 404 가 되므로 시도명으로 채운다.
+    if (!sigungu) sigungu = sido
+
+    // 신 코드 파일이 나중에 처리되므로 이름은 자연히 현행 표기로 덮어써진다.
+    regionMap.set(code, { code, sido, sigungu })
+
     if (!monthsMap.has(code)) monthsMap.set(code, new Map())
-    for (const [ym, stats] of monthData) monthsMap.get(code)!.set(ym, stats)
+    const target = monthsMap.get(code)!
+    for (const [ym, stats] of row.months) target.set(ym, stats)
   }
 }
 
-// 2. 연령별 CSV
-const ageFiles = fs.readdirSync(DATA_DIR)
-  .filter(f => /^\d{4}_(first|second)_half_population_by_age_monthly\.csv$/.test(f))
-  .sort()
+if (unknownPrefixes.size > 0) {
+  fail(
+    `알 수 없는 시도 prefix: ${[...unknownPrefixes].join(', ')}\n` +
+    `   행정구역 개편일 수 있습니다. scripts/lib/region-codes.ts 의 SIDO_BY_PREFIX 와\n` +
+    `   LEGACY_CODE_MAP 을 갱신하세요. 방치하면 해당 지역이 통째로 누락됩니다.`,
+  )
+}
+
+// ── 3. 연령별 파싱 ───────────────────────────────────────────────────────────
 
 const agesMap = new Map<string, Map<string, AgeGroup[]>>()
+const incompleteAgeMonths = new Set<string>()
+const sourceBounds = new Set<number>()
 
 for (const file of ageFiles) {
-  const { data } = parseAgeCSV(fs.readFileSync(path.join(DATA_DIR, file), 'utf-8'))
-  for (const [code, ageData] of data) {
+  const { rows, incompleteMonths, sourceLowerBounds } = parseAgeCSV(read(file))
+  incompleteMonths.forEach(m => incompleteAgeMonths.add(m))
+  sourceLowerBounds.forEach(b => sourceBounds.add(b))
+
+  for (const row of rows) {
+    if (!isSigunguRow(row.code)) continue
+    if (!sidoOf(row.code)) continue
+    const code = canonicalCode(row.code)
     if (!agesMap.has(code)) agesMap.set(code, new Map())
-    for (const [ym, groups] of ageData) agesMap.get(code)!.set(ym, groups)
+    const target = agesMap.get(code)!
+    for (const [ym, groups] of row.months) target.set(ym, groups)
   }
 }
 
-// 3. 통계 데이터가 있는 지역만 남긴다.
-// 출장소처럼 CSV에 행은 있지만 인구 수치가 없는 항목이 index에 남으면
-// 검색 결과에는 뜨는데 클릭하면 404가 된다 (docs/principles.md A4).
+if (incompleteAgeMonths.size > 0) {
+  fail(
+    `연령 구간이 불완전한 달: ${[...incompleteAgeMonths].sort().join(', ')}\n` +
+    `   0~9세부터 80세 이상까지 9개 구간이 모두 있어야 합니다.\n` +
+    `   MOIS 조회에서 연령 구간을 다시 선택해 내려받으세요 (docs/principles.md A2).`,
+  )
+}
+
+// ── 4. 통계가 있는 지역만 남긴다 ─────────────────────────────────────────────
+// 출장소처럼 CSV 에 행은 있지만 인구 수치가 없는 항목이 index 에 남으면
+// 검색 결과에는 뜨는데 클릭하면 404 가 된다 (docs/principles.md A4).
+
 const withData: RegionRaw[] = [...regionMap.values()]
   .filter(r => (monthsMap.get(r.code)?.size ?? 0) > 0)
   .sort((a, b) => a.code.localeCompare(b.code))
 
 const droppedNoData = regionMap.size - withData.length
+if (withData.length === 0) fail('인구 데이터가 있는 지역이 하나도 없습니다.')
 
-// 4. 행정 계층(level) 판별
+// ── 5. 행정 계층(level) 판별 ─────────────────────────────────────────────────
 // 일반구는 ① 부모 시 코드(앞 4자리 + '000000')가 목록에 있고
 //          ② 자기 이름이 '<부모명> ' 으로 시작한다.
 // ①만 쓰면 영동군(4374000000)/증평군(4374500000)처럼 코드 앞자리만 우연히 겹치는
 // 별개 지역을 잘못 묶는다. 두 조건을 모두 만족할 때만 일반구로 본다.
+
 const rawByCode = new Map(withData.map(r => [r.code, r]))
 
 function parentOf(r: RegionRaw): RegionRaw | null {
@@ -255,41 +203,101 @@ function parentOf(r: RegionRaw): RegionRaw | null {
   return r.sigungu.startsWith(`${parent.sigungu} `) ? parent : null
 }
 
-const index: Region[] = withData.map(r => ({
-  ...r,
-  level: parentOf(r) ? 'district' : 'sigungu',
-}))
+// ── 6. 폐지 지역 판별 ────────────────────────────────────────────────────────
+// 분할 개편(1:N)은 시계열을 병합할 수 없다. 구 지역의 이력은 그대로 보존하고
+// 폐지 사실과 승계 지역만 표기한다 (region-codes.ts SPLIT_SUCCESSORS 참고).
 
-// 5. 지역별 JSON 생성
-let count = 0
-for (const region of index) {
-  const monthData = monthsMap.get(region.code)!
-  const months: Record<string, MonthlyStats> = {}
-  for (const [ym, stats] of [...monthData.entries()].sort(([a], [b]) => a.localeCompare(b))) months[ym] = stats
-  const ages: Record<string, AgeGroup[]> = {}
-  const ageData = agesMap.get(region.code)
-  if (ageData) {
-    for (const [ym, groups] of [...ageData.entries()].sort(([a], [b]) => a.localeCompare(b))) ages[ym] = groups
+const lastMonthOf = (code: string) =>
+  [...(monthsMap.get(code)?.keys() ?? [])].sort().at(-1) ?? ''
+
+const latestMonth = withData.map(r => lastMonthOf(r.code)).sort().at(-1)!
+
+const index: Region[] = withData.map(r => {
+  const region: Region = { ...r, level: parentOf(r) ? 'district' : 'sigungu' }
+  const successors = SPLIT_SUCCESSORS[r.code]
+  const last = lastMonthOf(r.code)
+  if (successors && last < latestMonth) {
+    region.retiredAfter = last
+    region.successorCodes = successors.filter(c => rawByCode.has(c))
   }
-  const regionJSON: RegionJSON = { region, months, ages }
-  fs.writeFileSync(path.join(OUT_DIR, `${region.code}.json`), JSON.stringify(regionJSON))
-  count++
+  return region
+})
+
+// 선언되지 않은 지역이 최신월을 갖지 못하면 사람이 확인해야 한다.
+// 개편일 수도, 단순 결측일 수도 있어 자동으로 '폐지'라고 단정하지 않는다.
+const silentlyStale = index
+  .filter(r => !r.retiredAfter && lastMonthOf(r.code) < latestMonth)
+  .map(r => `${r.sido} ${r.sigungu}(${r.code}, ~${lastMonthOf(r.code)})`)
+
+if (silentlyStale.length > 0) {
+  console.warn(
+    `⚠️  최신월(${latestMonth}) 데이터가 없는 지역 ${silentlyStale.length}개:\n` +
+    silentlyStale.map(s => `      ${s}`).join('\n') +
+    `\n   행정구역 개편이라면 region-codes.ts 에 매핑을 추가하세요.` +
+    `\n   순위·전국 합계에서는 자동 제외되지만, 방치하면 유령 지역이 됩니다.`,
+  )
 }
 
-// 6. index.json
+// ── 7. 출력 ──────────────────────────────────────────────────────────────────
+// 출력 디렉터리를 매번 비운다. 그러지 않으면 개편으로 사라진 구 코드 JSON 이
+// 계속 남아 저장소를 오염시킨다 (docs/principles.md A4).
+// 여기까지 왔다면 쓸 데이터가 확보된 상태다 — 위의 fail() 들이 그것을 보장한다.
+
+fs.rmSync(OUT_DIR, { recursive: true, force: true })
+fs.mkdirSync(OUT_DIR, { recursive: true })
+
+const sortEntries = <T>(m: Map<string, T> | undefined): Record<string, T> => {
+  const out: Record<string, T> = {}
+  for (const [k, v] of [...(m?.entries() ?? [])].sort(([a], [b]) => a.localeCompare(b))) out[k] = v
+  return out
+}
+
+for (const region of index) {
+  const json: RegionJSON = {
+    region,
+    months: sortEntries(monthsMap.get(region.code)),
+    ages: sortEntries(agesMap.get(region.code)),
+  }
+  fs.writeFileSync(path.join(OUT_DIR, `${region.code}.json`), JSON.stringify(json))
+}
+
 fs.writeFileSync(path.join(OUT_DIR, 'index.json'), JSON.stringify(index))
 
-const topLevel = index.filter(r => r.level === 'sigungu').length
-const districts = index.length - topLevel
-console.log(`✅ 완료: ${count}개 지역 JSON → public/data/regions/`)
-console.log(`   최상위 시군구 ${topLevel} · 일반구 ${districts}${droppedNoData > 0 ? ` · 통계 없어 제외 ${droppedNoData}` : ''}`)
+// ── 8. 요약과 가드 ───────────────────────────────────────────────────────────
 
-// 계층 판별이 조용히 어긋나는 것을 막는 가드.
-// 개편으로 숫자가 바뀌면 실패가 아니라 확인 신호다 — 확인 후 기대값을 갱신한다.
-const EXPECTED_TOP_LEVEL = 229
-if (topLevel !== EXPECTED_TOP_LEVEL) {
+const retired = index.filter(r => r.retiredAfter)
+const districts = index.filter(r => r.level === 'district')
+const activeTopLevel = index.filter(r => r.level === 'sigungu' && !r.retiredAfter)
+const allMonths = [...new Set([...monthsMap.values()].flatMap(m => [...m.keys()]))].sort()
+
+console.log(`✅ 완료: ${index.length}개 지역 JSON → public/data/regions/`)
+console.log(`   최상위 시군구 ${activeTopLevel.length} · 일반구 ${districts.length}` +
+  (retired.length > 0 ? ` · 폐지 ${retired.length}` : '') +
+  (droppedNoData > 0 ? ` · 통계 없어 제외 ${droppedNoData}` : '') +
+  (droppedEupMyeonDong > 0 ? ` · 읍면동 제외 ${droppedEupMyeonDong}` : ''))
+console.log(`   기간 ${allMonths[0]}~${allMonths.at(-1)} (${allMonths.length}개월)` +
+  ` · 연령 원본 구간 하한 ${[...sourceBounds].sort((a, b) => a - b).join(',')}`)
+
+const ourTotal = index
+  .filter(r => r.level === 'sigungu' && !r.retiredAfter)
+  .reduce((s, r) => s + (monthsMap.get(r.code)?.get(latestMonth)?.population ?? 0), 0)
+const official = sidoTotals.get(latestMonth) ?? 0
+if (official > 0) {
+  const diff = ((ourTotal / official - 1) * 100).toFixed(3)
+  console.log(`   ${latestMonth} 전국 합계 ${ourTotal.toLocaleString()} ` +
+    `vs 시도 합계 행 ${official.toLocaleString()} (${diff}%)`)
+}
+
+for (const r of retired) {
+  const names = (r.successorCodes ?? [])
+    .map(c => rawByCode.get(c)?.sigungu ?? c).join('·')
+  console.log(`   ↪︎ 폐지: ${r.sido} ${r.sigungu} (~${r.retiredAfter}) → ${names}`)
+}
+
+if (activeTopLevel.length !== EXPECTED_ACTIVE_TOP_LEVEL) {
   console.warn(
-    `⚠️  최상위 시군구가 ${topLevel}개입니다 (기대값 ${EXPECTED_TOP_LEVEL}). ` +
-    `행정구역 개편이라면 LEGACY_CODE_MAP과 이 기대값을 함께 갱신하세요.`,
+    `\n⚠️  현행 최상위 시군구가 ${activeTopLevel.length}개입니다 ` +
+    `(기대값 ${EXPECTED_ACTIVE_TOP_LEVEL}).\n` +
+    `   행정구역 개편이라면 region-codes.ts 의 매핑과 이 기대값을 함께 갱신하세요.`,
   )
 }

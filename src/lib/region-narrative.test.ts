@@ -13,8 +13,17 @@ import { getTopLevelRegions, getAvailableMonths, getRegionDetail, getRegionRank 
 
 const REGIONS_DIR = path.join(process.cwd(), 'public', 'data', 'regions')
 
+/**
+ * 기준월을 정한다. 개편으로 폐지된 지역은 전역 최신월 데이터가 없으므로
+ * 그 지역의 마지막 달을 쓴다 — 지역 페이지와 같은 규칙이다.
+ */
+function refMonthFor(region: { code: string; retiredAfter?: string }) {
+  return region.retiredAfter ?? getAvailableMonths().at(-1)!
+}
+
 function narrativeFor(code: string) {
-  const ym = getAvailableMonths().at(-1)!
+  const region = getTopLevelRegions().find(r => r.code === code)
+  const ym = region ? refMonthFor(region) : getAvailableMonths().at(-1)!
   const detail = getRegionDetail(code, ym, 12)!
   return buildRegionNarrative({
     sigunguName: detail.region.sigungu,

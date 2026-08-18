@@ -1,7 +1,7 @@
 # 서비스 기능 명세
 
-> 최종 업데이트: 2026-08-10 (P0 데이터 정합성 작업 반영)
-> 대상: `docs/audit-2026-08` 브랜치 기준
+> 최종 업데이트: 2026-08-18 (원천 CSV 형식 교체 반영)
+> 대상: `main` 브랜치 기준
 
 ---
 
@@ -23,8 +23,8 @@
 | URL | https://korea-population-dashboard.vercel.app |
 | 타깃 사용자 | 부동산 구매·투자 검토자, 이주 지역 리서치 사용자 |
 | 데이터 출처 | 행정안전부(MOIS) 주민등록 인구통계 |
-| 데이터 범위 | 인구·세대 40개월(2023.01~2026.04), 연령별 39개월(2023.01~2026.03) |
-| 집계 단위 | `index.json` 268개 = 최상위 시군구 **229** + 일반구 **39**. 합계·순위는 최상위만 사용 → **§5 참조** |
+| 데이터 범위 | **43개월 (2023.01~2026.07)**, 인구·세대·연령 동일. 2026-08-18 신 형식으로 전량 교체 |
+| 집계 단위 | `index.json` 272개 = 현행 최상위 시군구 **230** + 일반구 **39** + 폐지 **3**. 합계·순위는 현행 최상위만 사용 |
 | 갱신 주기 | 월 1회 수동 (`data/raw/`에 CSV 추가 후 `npm run build-data`) |
 | 렌더링 | Server Component 기본, 인터랙션 요소만 Client Component |
 | UI | 라이트 미니멀, 모바일 전용(`max-width: 430px`), 다크 모드 없음 |
@@ -65,13 +65,14 @@
 | 영역 | 기능 |
 |------|------|
 | 헤더 | 뒤로가기 / 검색 / 공유 / 즐겨찾기 / 비교 이동 |
+| **폐지 안내** | `Region.retiredAfter`가 있을 때만 노출. 폐지 시점과 승계 지역 링크. 기준월은 그 지역의 마지막 달로 고정된다 |
 | 기준월 선택기 | `MonthPicker` (URL `ym`) |
 | 기준 정보 | 시도명 · 기준월 · 시도 내 순위 · 전국 순위 뱃지 |
 | 핵심 지표 카드 ×2 | 총인구 / 세대수 — MoM + YoY 동시 표시, count-up |
 | 부가 지표 카드 | 세대당 인구 / 성비(`SexRatioCard`) |
 | **한 줄 판정** | 최상단. 인구 추세 + 연령 구조 + 세대 분화를 조합한 한 문장 결론 (`VerdictCard`, 7종 분기) |
 | 통계 요약 | 전월·전년비·순위를 pill로 요약 (`RegionInsight`) |
-| 지역 분석 | 규모·순위 / 1년 추세 / 연령 구성 해석 / 세대 분화 / 가구 구성·성비 — 수치에서 생성한 **5문단** (`buildRegionNarrative`) |
+| 지역 분석 | 규모·순위 / 1년 추세 / 연령 구성 해석 / 세대 분화 / 가구 구성·성비 — 수치에서 생성한 **5문단** (`buildRegionNarrative`). 신설 지역은 추세 문단 자리에 "아직 판단할 수 없다"는 사유를 넣는다 |
 | 인구 추이 | **전년 동기 3개월 막대 비교**(`YoYBarChart`) — 라인 차트가 아님 |
 | **구별 현황** | 일반구가 있는 시에만 노출. 구별 인구·전년비 리스트 → 해당 구 페이지로 드릴다운 (`getChildDistricts`) |
 | 시점 비교 | 현재 월 vs 과거 특정 월 (Server Action fetch, `TimePeriodCompare`) |
@@ -110,7 +111,9 @@
 | 성비 | 남 ÷ 여 × 100 | 동일 |
 | 중위 연령대 | 누적 50% 지점의 연령 구간 | 중위연령(단일 값)이 아닌 구간 |
 
-**원본 CSV가 이미 10세 단위**(`0~9세` … `100세 이상`)라 65/15세 경계를 만들 수 없다. 파이프라인의 한계가 아니라 다운로드 설정 문제이며, MOIS 포털에서 5세 단위로 다시 받으면 공식 정의를 그대로 쓸 수 있다. 현재는 툴팁에 "10세 단위 근사"로 고지되어 있다.
+**10세 단위를 기준으로 확정했다 (2026-08-18).** 원본 CSV가 `0~9세` … `100세 이상` 11구간으로 제공되어 65/15세 경계를 만들 수 없다. 5세 단위 재다운로드를 시도했으나 MOIS 조회에서 구간 선택이 어긋나 파일이 조용히 망가졌고, 43개월 전 기간을 5세로 유지하는 운영 비용이 지표 정확도 이득보다 크다고 판단했다.
+
+대신 **공식 지표명을 우리 근사치에 쓰지 않는다** — "노령화지수"가 아니라 "고령화 지수", "생산연령인구"가 아니라 "생산가능 비율". 같은 이름에 다른 계산식이 붙는 것이 가장 나쁜 상태다(`principles.md` A2). 툴팁에 "10세 단위 근사"로 고지되어 있다.
 
 **컴포넌트:** `DetailTabs`, `TrendChart`, `ChangeChart`, `MigrationTab`, `AgeChart`, `AgeCompareTab`, `AgeInsightCards`, `StatCard`, `MonthPicker`
 
@@ -207,7 +210,7 @@
 | `/privacy` | 개인정보처리방침 (시행일 2026-06-30). 회원가입 없음, 자동 수집 항목·AdSense 제3자 제공·쿠키 고지 |
 | `/methodology` | 데이터 출처·갱신 주기, 집계 단위, 행정경계 변경 처리, 지표 정의, 해석 가이드 |
 
-> `/about`·`/methodology`가 "전국 226개 시군구"라고 명시하나 실제 최상위 시군구는 229다 → §5 D6.
+> 지역 수는 `getTopLevelRegions().length`로 렌더한다. 하드코딩 "226개"는 2026-08-11 제거됨(D6 해소).
 
 ---
 
@@ -242,15 +245,18 @@
 | `AnimatedNumber` | count-up 숫자 |
 | `FadeIn` | 진입 fade 래퍼 |
 | `Skeleton` | shimmer 플레이스홀더 |
-| `RangeToggle` | **미사용(dead code)** — `DetailTabs`가 동일 이름의 로컬 컴포넌트를 별도로 정의해 쓴다 |
+
+> `ui/RangeToggle.tsx`는 2026-08-11 삭제됨(dead code, D10 해소). 기간 토글은 `DetailTabs`의 로컬 컴포넌트뿐이다.
+
+`AnimatedNumber`의 **초기 상태는 실제 값이어야 한다.** 0으로 시작하면 서버 HTML에 0이 박혀 크롤러가 지역 페이지 수치를 전부 "0.0만 명"으로 읽는다(2026-08-11 수정, `principles.md` B4).
 
 ### 광고 (`src/components/AdSlot.tsx`)
 
-`slot`, `format`, `style`, `className`, `enabled`(기본 true). `slot`이 비었거나 `enabled=false`면 `null`을 반환해 광고 유닛을 렌더하지 않는다(빈 슬롯 노출로 인한 정책 위반 방지). 활성 시 `adsbygoogle.push()` 1회 + "광고" 라벨. 퍼블리셔 ID 하드코딩, 슬롯 ID는 `NEXT_PUBLIC_ADSENSE_SLOT_BANNER`.
+`slot`, `format`, `style`, `className`, `enabled`(기본 true). `slot`이 비었거나 `enabled=false`면 `null`을 반환해 광고 유닛도 스크립트도 렌더하지 않는다(빈 슬롯 노출로 인한 정책 위반 방지). 활성 시 `adsbygoogle.js` 로드 + `adsbygoogle.push()` 1회 + "광고" 라벨. 퍼블리셔 ID 하드코딩, 슬롯 ID는 `NEXT_PUBLIC_ADSENSE_SLOT_BANNER`.
 
 **배치:** 홈 · `/ranking` · `/trending` 콘텐츠 하단 3곳뿐.
 
-**정책:** AdSense 대시보드에서 자동 광고(Auto Ads)를 반드시 OFF로 유지. `adsbygoogle.js`가 전 페이지에 로드되므로 자동 광고는 얇은 화면(지도·비교 빈 상태)에 광고를 자동 삽입해 "게시자 콘텐츠가 없는 화면" 위반을 재발시킨다.
+**정책:** `adsbygoogle.js`는 `AdSlot` 안에서만 로드한다 — 2026-08-11에 루트 레이아웃에서 제거했다. 전역 로드 시 자동 광고(Auto Ads)가 얇은 화면(지도·비교 빈 상태·지역 상세)에 광고를 삽입해 "게시자 콘텐츠가 없는 화면" 위반이 재발한다. 스크립트를 `AdSlot` 안에 두면 **대시보드 설정과 무관하게 구조적으로 차단된다.** 대시보드의 자동 광고 OFF는 이중 방어로만 의미가 있다.
 
 ---
 
@@ -259,42 +265,105 @@
 ### 흐름
 
 ```
-MOIS CSV (data/raw/, 3종 중 2종만 파싱)
-  → scripts/csv-to-json.ts  (npm run build-data — dev/build 전 자동)
+MOIS CSV (data/raw/, 2종 — 인구·세대 / 연령별)
+  → npm run check-raw       (선택. 파일을 넣은 직후, 빌드 전에)
+  → scripts/csv-to-json.ts  (npm run build-data — dev/build/test 전 자동)
   → public/data/regions/{code}.json + index.json   (git 커밋됨)
   → src/lib/data.ts  (요청 시 fs.readFileSync)
   → Server Component / Server Action
   → Client Component (props)
 ```
 
-런타임에 CSV를 파싱하지 않는다. 원본 CSV는 `data/raw/`에만 있고 `public/`에는 없다.
+런타임에 CSV를 파싱하지 않는다. 원본 CSV는 `data/raw/`에만 있고 `public/`에는 없다. **따라서 원천 CSV가 바뀌어도 배포된 서비스는 영향을 받지 않는다** — 깨지는 지점은 빌드다.
 
-### CSV 파싱 (`scripts/csv-to-json.ts`)
+### 원천 CSV 형식 (2026-08-18 교체)
 
-- **인구·세대 CSV**: 1행 메타, 2행 월 헤더(반복), 3행 컬럼 타입, **4행부터** 데이터. 월당 5컬럼
-- **연령별 CSV**: 앞 3행 동일, **5행부터** 데이터. 5세 단위 원본 → 10세 단위 9버킷 재집계
-- `splitCSVLine()`이 따옴표 안 콤마 처리, `parseNum()`이 콤마 제거
-- `LEGACY_CODE_MAP`: 강원(42xx→51xx, 2023.06)·전북(45xx→52xx, 2024.01) 병합으로 시계열 연속성 유지. **군위군(2023.07 경북→대구, 4772000000→2772000000)은 누락 → D12**
-- **미사용 CSV**: `*_other_population_change_monthly.csv`는 `data/raw/`에 있지만 파싱하지 않는다. 이름과 달리 **전입·전출 데이터가 아니고** 월별 `전월인구수 / 당월인구수 / 인구증감`을 남·여·계로 나눈 파일이다. 추가로 얻을 수 있는 정보는 **증감의 성별 분해**뿐이며, 진짜 이동자 통계는 이 저장소에 없다. 단 **전국·시도 합계 행이 포함되어 있어 집계 검증 기준값으로 유용하다**(2026.04 전국 51,097,986명)
+MOIS 포털 다운로드 형식이 바뀌었고, `data/raw`를 신 형식 16개 파일로 전량 교체했다. 파일명은 받은 그대로 유지한다(`202601_202606_주민등록인구및세대현황_월간.csv`).
+
+| | 구 형식 (git 이력) | 신 형식 (현재) |
+|---|---|---|
+| 인코딩 | UTF-8 + BOM | **CP949** |
+| 헤더 깊이 | 3행(인구) / 4행(연령) | **1행 (양쪽 동일)** |
+| 데이터 시작 | 4행 / 5행 | **2행** |
+| 지역 코드 | 컬럼 0 `행정기관코드` | **이름에 결합** — `서울특별시  (1100000000)` |
+| 월·항목 | 별도 행에 `2026년01월` | **컬럼명에 결합** — `2026년07월_세대수` |
+| 인구 지표명 | `총 거주자수` | `거주자 인구수` — **같은 값** |
+| 연령 구간 | 10세 11구간 | 10세 11구간 — **동일** |
+
+**시계열이 어긋나지 않는 근거:** 지표 정의가 같다(양쪽 다 거주자 기준). 우리 합계가 MOIS 공식 *총인구*보다 낮은 것은 거주불명자·재외국민 제외 때문이며 정상이다. **시도 합계 행과는 정확히 일치한다** — 2026.07 기준 50,871,820명으로 오차 0.000%.
+
+### CSV 파싱 (2026-08-18 재작성)
+
+파서는 순수 모듈로 분리되어 단위 테스트 대상이 된다(P1-7 해소).
+
+| 파일 | 역할 |
+|---|---|
+| `scripts/lib/mois-csv.ts` | 인코딩 판별·행 분해·헤더 파싱·연령 재집계. 파일 시스템을 모른다 |
+| `scripts/lib/region-codes.ts` | `SIDO_BY_PREFIX`·`LEGACY_CODE_MAP`·`SPLIT_SUCCESSORS` |
+| `scripts/csv-to-json.ts` | 파일 읽기·병합·계층 판별·폐지 판별·JSON 쓰기 |
+| `scripts/check-raw.ts` | 원본 검사 (`npm run check-raw`) |
+
+**설계 규칙**
+
+- **컬럼은 이름으로 찾는다.** 위치 오프셋을 쓰지 않으므로 월 개수·연령 구간 폭이 달라져도 동작한다. 5세 단위 원본도 같은 9버킷으로 접힌다
+- **빈 셀은 결측이지 0이 아니다.** 개편월에는 구·신 코드가 한 파일에 함께 나오며 서로 겹치지 않는 달을 채운다
+- **연령 원본 11구간 → 9버킷** (`80+` = 80~89 + 90~99 + 100+). 구간 하한으로 버킷을 정한다
+- **시도 행(`00000000`)은 지역 목록에서 제외하되 검증 기준값으로 합산**한다(`principles.md` A3-1)
+- **읍면동(뒤 5자리 ≠ `00000`)은 배제**한다. 섞여 들어오면 상위 단위와 이중 계상된다
+
+**빌드를 세우는 조건 (경고가 아니라 중단)**
+
+| 조건 | 이유 |
+|---|---|
+| 읽은 CSV가 0개 | 출력 디렉터리를 비우기 **전에** 실패한다. 이 순서가 D14의 실질적 위험이었다 |
+| 알 수 없는 시도 prefix | 개편 미반영 시 해당 시도가 통째로 누락된다 |
+| 연령 구간 불완전 | `0~9세`만 담긴 파일이 조용히 통과한 적이 있다 |
+
+**경고만 하는 조건:** 최신월 데이터가 없는 미선언 지역, 현행 최상위 시군구 수 ≠ `EXPECTED_ACTIVE_TOP_LEVEL`(230).
+
+### 행정구역 개편 처리
+
+개편은 두 종류이고 처리가 다르다.
+
+**① 통합·개칭 → `LEGACY_CODE_MAP`으로 병합** (시계열 연속)
+
+| 개편 | 시점 | 매핑 수 |
+|---|---|---|
+| 강원도 → 강원특별자치도 (42xx→51xx) | 2023.06 | 18 |
+| 군위군 경북 → 대구 | 2023.07 | 1 |
+| 전라북도 → 전북특별자치도 (45xx→52xx) | 2024.01 | 16 (일반구 2 포함) |
+| **광주광역시 + 전라남도 → 전남광주통합특별시** (29xx·46xx→12xx) | **2026.07** | 27 |
+
+> 부모 시를 옮기면 **그 일반구도 함께** 옮겨야 한다. 전주시 완산구·덕진구를 빠뜨리면 계층 판별이 부모를 못 찾아 일반구가 최상위로 잘못 승격된다(실제로 발생, 230이 232가 됨).
+
+**② 분할 → 병합 불가. `SPLIT_SUCCESSORS`에 승계 관계만 기록**
+
+인천 2026.07 개편(중구+동구→제물포구+영종구, 서구→서해구+검단구)이 해당한다. 과거 인구를 신 지역에 배분할 근거가 없어 만들지 않는다(`principles.md` A3).
+
+| 결과 | 처리 |
+|---|---|
+| 구 지역 3개 | `retiredAfter: '202606'` + `successorCodes`. 이력 조회 가능, 최신월 순위·합계에서 자동 제외 |
+| 신 지역 4개 | 202607 1개월치만 보유. 서술이 "아직 추세를 판단할 수 없다"고 명시 |
+| 현행 최상위 시군구 | 229 → **230** (3개 → 4개) |
 
 ### 주요 함수 (`src/lib/data.ts`)
 
 | 함수 | 반환 | 설명 | 집계 대상 |
 |------|----------|------|---|
-| `getAllRegions()` | `Region[]` | 전체 목록 — 검색·비교용 | 268 (일반구 포함) |
-| `getAvailableMonths()` | `string[]` | 연월 목록 — **index 첫 지역의 월 키만 사용** | — |
+| `getAllRegions()` | `Region[]` | 전체 목록 — 검색·비교용 | 272 (일반구·폐지 포함) |
+| `getAvailableMonths()` | `string[]` | 연월 목록 — **최상위 시군구 전체의 합집합** (모듈 캐시) | 230 (현행 최상위) |
 | `getMonthStats(code, ym)` | `MonthlyStats \| null` | 단일 월 통계 | — |
 | `getRegionDetail(code, ym?, range=12)` | `RegionDetail \| null` | 추이·연령·YoY. `range=0`이면 전체 기간 | 단일 |
 | `getRegionBySlug(sido, sigungu)` | `Region \| null` | URL slug 조회 | — |
-| `getRegionRank(code, ym)` | `RegionRank \| null` | 시도 내 + 전국 순위 | 229 (최상위) |
-| `getAllRegionRankings(ym)` | `RegionRankEntry[]` | 순위 리스트. 기준월 데이터 없는 지역은 제외(폴백 없음) | 229 (최상위) |
-| `getPopularRegions()` | `{code, rate}[]` | 12개월 증가율 TOP 6, 시도별 1개 | 229 (최상위) |
-| `getDecliningRegions()` | `{code, rate}[]` | 12개월 감소율 TOP 6, 시도별 1개 | 229 (최상위) |
-| `getAgingRegions()` | `{code, rate}[]` | 고령화 지수 TOP 6, 시도별 1개 | 229 (최상위) |
-| `getPopulationTrends(3\|6\|12)` | `{gainers, losers}` | 급증·급감 TOP 10 | 229 (최상위) |
-| `getNationalSummary()` | `NationalSummary \| null` | 전국 총인구 + 전월 증감 | 229 (최상위) |
-| `getSidoStats()` | `SidoStat[]` | 시도별 인구 + **전년 동월 대비** 변화율 | 229 (최상위) |
-| `getTopLevelRegions()` | `Region[]` | **합계·순위의 유일한 대상 셀렉터** | 229 |
+| `getRegionRank(code, ym)` | `RegionRank \| null` | 시도 내 + 전국 순위 | 230 (현행 최상위) |
+| `getAllRegionRankings(ym)` | `RegionRankEntry[]` | 순위 리스트. 기준월 데이터 없는 지역은 제외(폴백 없음) | 230 (현행 최상위) |
+| `getPopularRegions()` | `{code, rate}[]` | 12개월 증가율 TOP 6, 시도별 1개 | 230 (현행 최상위) |
+| `getDecliningRegions()` | `{code, rate}[]` | 12개월 감소율 TOP 6, 시도별 1개 | 230 (현행 최상위) |
+| `getAgingRegions()` | `{code, rate}[]` | 고령화 지수 TOP 6, 시도별 1개 | 230 (현행 최상위) |
+| `getPopulationTrends(3\|6\|12)` | `{gainers, losers}` | 급증·급감 TOP 10 | 230 (현행 최상위) |
+| `getNationalSummary()` | `NationalSummary \| null` | 전국 총인구 + 전월 증감 | 230 (현행 최상위) |
+| `getSidoStats()` | `SidoStat[]` | 시도별 인구 + **전년 동월 대비** 변화율 | 230 (현행 최상위) |
+| `getTopLevelRegions()` | `Region[]` | **합계·순위의 유일한 대상 셀렉터** | 233 (폐지 3 포함) |
 | `getChildDistricts(parent, ym)` | `ChildDistrict[]` | 부모 시의 일반구 목록 (구별 현황 섹션용) | 해당 시의 구 |
 | `getAgeGroups(code, ym)` | `AgeGroup[] \| null` | 연령 분포 (10세 단위) | 단일 |
 
@@ -303,8 +372,11 @@ MOIS CSV (data/raw/, 3종 중 2종만 파싱)
 ### 타입 (`src/lib/types.ts`)
 
 ```ts
-Region          { code, sido, sigungu }
-MonthlyStats    { year, month, population, households, householdSize, male, female }
+RegionLevel     'sigungu' | 'district'
+Region          { code, sido, sigungu, level, retiredAfter?, successorCodes? }
+                // level: 합계·순위 대상 판별 / retiredAfter: 개편 폐지 지역의 마지막 월
+MonthlyStats    { population, households, householdSize, male, female }
+                // year/month 제거됨 (2026-08-18) — ym 키가 같은 정보였다
 RegionDetail    { region, latest, prevMonth, yoyMonth, trend, ageGroups }
 RegionRank      { nationalRank, nationalTotal, sidoRank, sidoTotal }
 AgeGroup        { label, male, female }        // label 예: "30–39" (en dash)
@@ -331,7 +403,17 @@ SidoStat        { sido, population, changeRate }        // data.ts에 정의
 
 ### 테스트
 
-테스트 파일 없음. `package.json`에 `test` 스크립트도 없다 — `npx vitest run`으로 직접 실행. `vitest.config.mjs`만 설정되어 있다.
+`npm run test` = `build-data` + `vitest run`. 총 **67개, 전부 통과**.
+
+| 파일 | 개수 | 지키는 것 |
+|---|---:|---|
+| `src/lib/data.test.ts` | 28 | 빌드 산출물 회귀 — 계층 판별, 전국 합계 대조, 순위 계층 분리, 폴백 금지, 개편 시계열 연속성, 구별 현황 합산, **폐지 지역 처리**, **지도 시도명 일치** |
+| `scripts/lib/mois-csv.test.ts` | 31 | 파싱 규칙 — 인코딩 판별, 빈칸/결측 구분, 컬럼 순서 무관성, 연령 재집계(5세·10세), 불완전 구간 감지, NFD 파일명 |
+| `src/lib/region-narrative.test.ts` | 8 | 서술 다양성 — 어떤 판정도 85%, 세대 분화 문장은 70%를 넘지 않아야 한다(`principles.md` B2) |
+
+**두 층으로 나눈 이유:** 산출물 검사만으로는 파싱 결함을 못 잡는다. 파서가 파일을 0개 읽어도 "산출물이 일관적이다"는 통과할 수 있다 — D14가 정확히 그랬다. 파서 테스트는 고정 입력 문자열을 쓰므로 원본 데이터가 바뀌어도 규칙 자체의 회귀를 잡는다.
+
+**의미 있음이 검증되었다:** D1(일반구 이중 계상)을 의도적으로 재주입했을 때 4개가 실패했다.
 
 ---
 
@@ -357,10 +439,37 @@ SidoStat        { sido, population, changeRate }        // data.ts에 정의
 
 **집계 단위 확정:** `index.json` 268 = 최상위 시군구 **229** + 일반구 **39**. 일반구는 검색·비교·지역 상세에서는 유지되고, 합계·순위에서만 제외된다. 부모 시 상세의 "구별 현황" 섹션이 드릴다운 경로다.
 
+### ✅ 해소됨 (P1, 2026-08-11)
+
+| # | 결함 | 조치 | 검증 |
+|---|---|---|---|
+| D6 | 문서상 시군구 수 오류 — `/about`·`/methodology`·홈이 "226개"로 명시 | 하드코딩 제거, `getTopLevelRegions().length` 렌더 | 화면에 **229** 표기 |
+| D10 | `src/components/ui/RangeToggle.tsx` 미사용 (`DetailTabs`에 동명 로컬 컴포넌트가 별도 존재) | 공용 파일 삭제 | dead code 0 |
+| D11 | `getAvailableMonths()`가 index 첫 지역에만 의존 — 종로구가 최신월을 갖지 못하면 전 서비스 기준월이 밀린다 | 최상위 시군구 **전체의 합집합**으로 변경 + 모듈 캐시 | `data.test.ts` "연월 목록 (D11)" |
+| — | `AnimatedNumber`가 서버 HTML에 0을 렌더 — 크롤러가 지역 페이지 핵심 수치를 전부 "0.0만 명"으로 읽었다 | 초기 상태를 실제 값으로 | `principles.md` B4로 원칙화 |
+| — | 세대 분화 서술이 사실상 고정 템플릿 (229개 중 **225개**가 같은 문장) | 실제 분포(중앙값 1.00)에 맞춰 임계값 재설정 → 52/109/52/16 | `region-narrative.test.ts` 8개 |
+
+### ✅ 해소됨 (P0-7 파서 재작성, 2026-08-18)
+
+| # | 결함 | 조치 | 검증 |
+|---|---|---|---|
+| D14 | 파서가 신 형식 CSV를 한 개도 읽지 못함. `build-data`가 출력 디렉터리를 먼저 비워 **커밋된 JSON 269개를 지우고 빈 `index.json`만 쓰는** 상태였다 | 파서를 순수 모듈로 재작성(CP949 판별·컬럼명 조회·코드 추출). **읽은 파일이 0개면 디렉터리를 비우기 전에 `process.exit(1)`** | 43개월 272개 지역 생성. `npm run build`·`start` 정상 |
+| D15 | 전국 합계 대조 기준값이 삭제된 `기타현황` CSV를 가리켜 `null` 반환 | 기준값을 원본 CSV의 **시도 합계 행**으로 전환 | 2026.07 우리 합계 = 시도 합계 = **50,871,820, 오차 0.000%** |
+| — | `getRegionDetail()`이 기준월을 못 찾으면 그 지역의 마지막 달로 **조용히 폴백** — "2026년 7월"이라 쓰고 6월 수치를 보여주는 경로 | 기준월 지정 시 없으면 `null` 반환 | 폐지 지역 대상 회귀 테스트 추가 |
+| — | 전주시만 매핑하고 완산구·덕진구를 빠뜨려 일반구가 부모를 잃고 최상위로 승격 (230→232) | `LEGACY_CODE_MAP`에 일반구 2건 추가 | 현행 최상위 **230** |
+| — | `/map`의 시도명 매핑이 개편 후 이름과 어긋나 광주·전남 도형이 회색으로 남음 | 매핑을 순수 모듈(`src/lib/sido-map.ts`)로 분리하고 둘 다 통합시로 연결 | 양방향 일치 테스트 2개 |
+| P1-7 | CSV 파서 단위 테스트 부재 | `scripts/lib/mois-csv.ts` 분리 + `mois-csv.test.ts` **31개** | 고정 입력 기반이라 원본이 바뀌어도 유효 |
+
 ### ⚠️ 남은 항목
 
 | # | 결함 | 영향 | 처리 |
 |---|---|---|---|
-| D6 | **문서상 시군구 수 오류** — `/about`·`/methodology`가 "226개"로 명시. 실제 최상위 시군구는 229 | 사용자 대상 사실 오류 | P1-2 — 하드코딩 대신 데이터에서 렌더 |
-| D10 | **`src/components/ui/RangeToggle.tsx` 미사용** — `DetailTabs`가 동명 로컬 컴포넌트를 별도 정의 | dead code | P1-6 |
-| D11 | **`getAvailableMonths()`가 index 첫 지역에만 의존** — 종로구가 최신월을 갖지 못하면 전 서비스 기준월이 밀린다 | 잠재적 단일 장애점 | P1-4 |
+| **D16** | **`npm run lint`이 6 error + 1 warning으로 실패한다.** React 19 `react-hooks` 규칙 위반 — effect 안 동기 setState 4건(`CompareClient` ×2, `AgeCompareTab`, `BookmarkButton`), 렌더 중 impure 호출 1건(`AgeCompareTab:158`), 렌더 중 ref 접근 1건(`DetailTabs:68`), 미사용 import 1건(`DetailTabs`의 `AnimatePresence`) | 동작은 하지만 lint 게이트가 항상 빨간 상태라 새 위반을 못 잡는다 | P1-8 |
+
+### 📋 남은 개선 (결함 아님)
+
+| # | 항목 | 처리 |
+|---|---|---|
+| P1-5 | "전입출" 탭 라벨이 실제 계산(순증감)과 다르다 | `principles.md` A3 |
+| P2-5 | 연령 데이터가 인구 데이터보다 1개월 뒤처지는데 연령 탭에 기준월 표기가 없다 | `principles.md` B1 |
+| — | 신설 지역 4개(인천)는 12개월이 쌓이기 전까지 YoY·판정이 비어 있다 | 2027.07에 자연 해소 |

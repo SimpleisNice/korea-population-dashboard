@@ -209,6 +209,17 @@ export function buildRegionNarrative(input: NarrativeInput): RegionNarrative {
         `부동산 수요 위축과 공실 리스크 가능성을 함께 고려해야 하는 구간입니다.`,
       )
     }
+  } else {
+    // 행정구역 개편으로 신설된 지역은 비교할 과거가 없다.
+    // 없는 추세를 만들어내지 않고 왜 없는지 밝힌다 (docs/principles.md A3).
+    const n = input.trend.length
+    paragraphs.push(
+      n <= 1
+        ? `${monthLabel}이 이 지역의 첫 통계 시점이라 아직 인구 추세를 판단할 수 없습니다. ` +
+          `행정구역 개편으로 신설된 지역은 12개월치가 쌓인 뒤에야 전년 대비 비교가 가능합니다.`
+        : `누적 통계가 ${n}개월치뿐이라 전년 동월 대비 증감률을 아직 산출할 수 없습니다. ` +
+          `당분간은 월별 증감으로 흐름을 확인해야 하는 지역입니다.`,
+    )
   }
 
   // 3) 연령 구조 — 부동산·상권 함의까지

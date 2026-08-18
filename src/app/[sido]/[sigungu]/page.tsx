@@ -13,7 +13,7 @@ import { ShareButton } from '@/components/region/ShareButton'
 import { MonthPicker } from '@/components/ui/MonthPicker'
 import { FadeIn } from '@/components/ui/FadeIn'
 import { TimePeriodCompare } from '@/components/region/TimePeriodCompare'
-import { getRegionDetail, getRegionBySlug, getAvailableMonths, getRegionRank, getMonthStats, getChildDistricts } from '@/lib/data'
+import { getRegionDetail, getRegionBySlug, getAvailableMonths, getRegionRank, getMonthStats, getChildDistricts, getAllRegions } from '@/lib/data'
 import type { ChildDistrict } from '@/lib/data'
 import { regionPath } from '@/lib/utils'
 import { buildRegionNarrative } from '@/lib/region-narrative'
@@ -96,10 +96,19 @@ export default async function RegionPage({
 
   const availableMonths = getAvailableMonths()
   const latestMonth = availableMonths[availableMonths.length - 1]
-  const currentMonth = ym && availableMonths.includes(ym) ? ym : latestMonth
+  const requestedMonth = ym && availableMonths.includes(ym) ? ym : latestMonth
+  // 개편으로 폐지된 지역은 전역 최신월 데이터가 없다. 그 지역의 마지막 달로 되돌리되,
+  // 아래 폐지 안내가 이유와 기준 시점을 명시한다 (docs/principles.md A4-1·B1).
+  const currentMonth = region.retiredAfter && requestedMonth > region.retiredAfter
+    ? region.retiredAfter
+    : requestedMonth
 
   const detail = getRegionDetail(region.code, currentMonth, 12)
   if (!detail) notFound()
+
+  const successors = (region.successorCodes ?? [])
+    .map(code => getAllRegions().find(r => r.code === code))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r))
 
   const { latest, prevMonth, yoyMonth } = detail
   const popChange      = prevMonth ? latest.population  - prevMonth.population  : undefined
@@ -172,6 +181,52 @@ export default async function RegionPage({
       />
 
       <div id="region-content" style={{ padding: '0 16px 32px' }}>
+        {/* 폐지 안내 — 왜 최신 데이터가 없는지 먼저 밝힌다 */}
+        {region.retiredAfter && (
+          <div
+            className="rounded-xl"
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              padding: '14px 16px',
+              margin: '16px 0 0',
+            }}
+          >
+            <p
+              className="text-[13px] font-semibold"
+              style={{ color: 'var(--color-text-primary)', marginBottom: 6 }}
+            >
+              행정구역 개편으로 폐지된 지역입니다
+            </p>
+            <p
+              className="text-[12px] leading-relaxed"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              {sigunguName}은(는) {formatYM(region.retiredAfter)}을 끝으로 통계가 종료되었습니다.
+              아래 수치는 그 시점까지의 이력이며, 최신 순위·전국 합계에는 포함되지 않습니다.
+              {successors.length > 0 && ' 현재는 아래 지역으로 재편되었습니다.'}
+            </p>
+            {successors.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" style={{ marginTop: 10 }}>
+                {successors.map(s => (
+                  <Link
+                    key={s.code}
+                    href={regionPath(s.sido, s.sigungu)}
+                    className="rounded-full text-[12px] font-semibold"
+                    style={{
+                      backgroundColor: 'var(--color-accent-light)',
+                      color: 'var(--color-accent)',
+                      padding: '5px 12px',
+                    }}
+                  >
+                    {s.sigungu} →
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 기준월 선택 */}
         <div style={{ margin: '16px 0' }}>
           <Suspense>
