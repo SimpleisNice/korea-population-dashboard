@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { TrendingUp, BarChart2 } from 'lucide-react'
+import { TrendingUp, BarChart2, FileText } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { NationalSummary as NationalSummaryType } from '@/lib/types'
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
@@ -131,6 +131,21 @@ export function NationalSummary({ summary }: Props) {
           >
             <BarChart2 size={11} />
             지역 순위
+          </Link>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+          <Link
+            href="/report"
+            className="flex items-center gap-1.5 rounded-full text-[12px] font-semibold"
+            style={{
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-secondary)',
+              padding: '6px 14px',
+              backgroundColor: 'var(--color-bg)',
+            }}
+          >
+            <FileText size={11} />
+            월간 리포트
           </Link>
         </motion.div>
       </div>

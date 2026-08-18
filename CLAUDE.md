@@ -15,13 +15,14 @@ npm run lint       # ESLint
 npm run test       # build-data 후 vitest run
 ```
 
-테스트는 총 67개다.
+테스트는 총 84개다.
 
 | 파일 | 개수 | 지키는 것 |
 |---|---:|---|
 | `src/lib/data.test.ts` | 28 | 빌드 산출물 회귀. 각 테스트가 `docs/spec.md` §5 결함 번호에 대응 |
 | `scripts/lib/mois-csv.test.ts` | 31 | CSV 파싱 규칙 자체. 고정 입력 문자열을 쓰므로 원본이 바뀌어도 유효 |
 | `src/lib/region-narrative.test.ts` | 8 | 서술이 고정 템플릿으로 수렴하지 않는지 |
+| `src/lib/monthly-report.test.ts` | 17 | 월간 리포트 — 수치 정합성·개편 감지·서술 다양성 |
 
 집계 로직이나 파서를 건드렸으면 이 테스트를 먼저 돌린다. `npm run test`는 `build-data`를 선행하므로, 산출물만 검사하려면 `npx vitest run`을 쓴다.
 
@@ -127,6 +128,7 @@ npm run test       # build-data 후 vitest run
 - **URL 상태(`nuqs`/searchParams)** — React state나 Context를 쓰지 않는다. 필터가 새로고침·공유에 살아남는다
 - **라이트·모바일 전용 UI** — 다크 모드·데스크톱 레이아웃 없음(의도된 결정). 최대 폭 430px(`--max-w`), `MobileShell` 래퍼. 디자인 토큰은 `src/app/globals.css`의 `@theme`
 - **하단 네비게이션** — `BottomNav` 4탭: 홈 / 지도 / 순위(트렌딩 포함) / 비교. 지역 상세는 4탭: 인구추이 / 세대 / 연령 / 증감
+- **월간 리포트** — `/report/[ym]`(`YYYY-MM`)가 월마다 한 장씩 SSG로 생성된다(현재 42장). 생성기는 `src/lib/monthly-report.ts`. 데이터가 한 달 늘면 페이지도 한 장 늘어난다
 - **AdSense 운영 중** — `src/components/AdSlot.tsx`가 광고 유닛과 `adsbygoogle.js` 스크립트를 **함께** 렌더한다. 퍼블리셔 ID(`ca-pub-4466379680692265`)는 실 승인 ID로 컴포넌트와 `public/ads.txt`에 하드코딩. 슬롯 ID만 `NEXT_PUBLIC_ADSENSE_SLOT_BANNER` 환경변수. `slot`이 비었거나 `enabled={false}`면 `null`을 반환해 광고 유닛도 스크립트도 렌더하지 않는다
 - **`adsbygoogle.js`를 루트 레이아웃에 넣지 말 것.** 전역 로드 시 자동 광고(Auto Ads)가 지도·비교 빈 상태·지역 상세처럼 콘텐츠가 얇은 화면에도 광고를 삽입해 "게시자 콘텐츠가 없는 화면" 위반이 재발한다. 스크립트를 `AdSlot` 안에 둠으로써 **대시보드에서 자동 광고가 켜져 있어도 다른 화면에는 삽입될 수 없다**. 광고가 존재하는 페이지는 홈·`/ranking`·`/trending` 뿐이다
 

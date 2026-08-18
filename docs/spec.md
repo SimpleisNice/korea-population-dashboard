@@ -1,6 +1,6 @@
 # 서비스 기능 명세
 
-> 최종 업데이트: 2026-08-19 (P1 완료 · 페이지 명세 헤더 도입)
+> 최종 업데이트: 2026-08-19 (N-5 월간 리포트 신설)
 > 대상: `main` 브랜치 기준
 
 ---
@@ -45,6 +45,8 @@
 | `/[sido]/[sigungu]/detail` | `src/app/[sido]/[sigungu]/detail/page.tsx` | ✕ | ○ |
 | `/ranking` | `src/app/ranking/page.tsx` | ○ | ○ |
 | `/trending` | `src/app/trending/page.tsx` | ○ | ○ |
+| `/report` | `src/app/report/page.tsx` | ✕ | ○ |
+| `/report/[ym]` | `src/app/report/[ym]/page.tsx` | ○ | ○ (SSG 42장) |
 | `/map` | `src/app/map/page.tsx` | ✕ | **noindex** |
 | `/compare` | `src/app/compare/page.tsx` | ✕ | **noindex** |
 | `/about` · `/methodology` · `/privacy` | 각 `page.tsx` | ✕ | ○ |
@@ -198,6 +200,29 @@
 | 광고 + 해설 + Footer | "인구 트렌드 읽는 법" |
 
 **컴포넌트:** `TrendingClient`, `AdSlot`, `Footer`
+
+---
+
+### 2-6-1. 월간 인구 리포트 `/report` · `/report/[ym]`
+
+**목적:** 그 달에 어디가 늘고 줄었는지 한 장으로. 데이터 갱신이 곧 콘텐츠 생산이 되는 구조(N-5).
+
+**URL:** `/report/2026-07` (`YYYY-MM`). 전월 대비가 뼈대라 **첫 달은 리포트가 없다** → 43개월 중 **42장**.
+
+| 영역 | 내용 |
+|---|---|
+| 한 줄 요약 | 감소 폭 + 확산 정도 조합, **7종 분기** |
+| 전국 수치 카드 3개 | 전국 인구 · 전월 대비 · 증가/감소 시군구 수 |
+| 서술 3~5문단 | 전국 흐름 / 최대 증감 지역 / 인원 vs 비율 / 시도 분포 / **개편 안내(있는 달만)** |
+| 증가·감소·증가율 TOP 5 | 지역 페이지로 이동 |
+| 시도별 증감 | 시도별 증감과 "n/m곳 증가" |
+| 이전·다음 달 | 42장이 서로 연결된다 |
+
+**전국 인구는 그 달 데이터가 있는 지역 전부로 낸다.** 전월 비교 가능한 지역만 더하면 신설 지역이 빠져 홈·순위와 어긋난다 — 2026.07 인천 개편에서 실제로 90만 명 차이가 났다(`principles.md` B1). 증감·순위는 양쪽 달에 데이터가 있는 지역만 쓰고, 그 수를 `comparableCount`로 따로 노출한다.
+
+**생성기:** `src/lib/monthly-report.ts` (`buildMonthlyReport`). 조사(은/는·이/가·으로/로)를 받침에 맞춰 붙인다.
+
+**콘텐츠 분량:** 리포트 1장 ≈ **2,100자** (지역 페이지 1,692자, 홈 1,180자).
 
 ---
 
@@ -419,13 +444,14 @@ SidoStat        { sido, population, changeRate }        // data.ts에 정의
 
 ### 테스트
 
-`npm run test` = `build-data` + `vitest run`. 총 **67개, 전부 통과**.
+`npm run test` = `build-data` + `vitest run`. 총 **84개, 전부 통과**.
 
 | 파일 | 개수 | 지키는 것 |
 |---|---:|---|
 | `src/lib/data.test.ts` | 28 | 빌드 산출물 회귀 — 계층 판별, 전국 합계 대조, 순위 계층 분리, 폴백 금지, 개편 시계열 연속성, 구별 현황 합산, **폐지 지역 처리**, **지도 시도명 일치** |
 | `scripts/lib/mois-csv.test.ts` | 31 | 파싱 규칙 — 인코딩 판별, 빈칸/결측 구분, 컬럼 순서 무관성, 연령 재집계(5세·10세), 불완전 구간 감지, NFD 파일명 |
 | `src/lib/region-narrative.test.ts` | 8 | 서술 다양성 — 어떤 판정도 85%, 세대 분화 문장은 70%를 넘지 않아야 한다(`principles.md` B2) |
+| `src/lib/monthly-report.test.ts` | 17 | 리포트 — 순위표 합계와 일치, 개편 감지, 헤드라인 쏠림 50% 미만, 조사 오류 |
 
 **두 층으로 나눈 이유:** 산출물 검사만으로는 파싱 결함을 못 잡는다. 파서가 파일을 0개 읽어도 "산출물이 일관적이다"는 통과할 수 있다 — D14가 정확히 그랬다. 파서 테스트는 고정 입력 문자열을 쓰므로 원본 데이터가 바뀌어도 규칙 자체의 회귀를 잡는다.
 
