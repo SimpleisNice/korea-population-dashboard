@@ -225,35 +225,53 @@ export function HomePageClient({
           }}
         >
           <h2
-            className="text-[14px] font-bold"
-            style={{ color: 'var(--color-text-primary)', marginBottom: 8 }}
+            className="text-[15px] font-bold"
+            style={{ color: 'var(--color-text-primary)', marginBottom: 12 }}
           >
-            인구 데이터로 보는 부동산 시장
+            인구 데이터로 보는 부동산 및 상권 분석 가이드
           </h2>
           <p
-            className="text-[12px] leading-relaxed"
-            style={{ color: 'var(--color-text-secondary)', marginBottom: 8 }}
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
           >
-            인구 변화는 부동산 수요를 예측하는 가장 기본적인 지표입니다.
-            행정안전부가 매월 공개하는 주민등록 인구통계를 기반으로,
-            전국 {sigunguCount}개 시군구의 인구 추이와 세대수 변화를 분석합니다.
+            인구 변화는 부동산 수요와 상권의 흥망을 예측하는 가장 기저에 있는 선행 지표입니다.
+            본 대시보드는 행정안전부가 매월 초에 공개하는 최신 주민등록 인구통계를 기반으로,
+            전국 {sigunguCount}개 최상위 시군구의 인구 추이, 세대수 변화, 그리고 연령별 인구 구조를
+            한눈에 파악할 수 있도록 정제하여 제공합니다. 원천 데이터가 지닌 복잡성을 제거하고,
+            실제 의사결정에 필요한 수치만을 직관적으로 시각화했습니다.
           </p>
           <p
-            className="text-[12px] leading-relaxed"
-            style={{ color: 'var(--color-text-secondary)', marginBottom: 8 }}
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
           >
-            인구 급증 지역은 신규 택지 개발, 기업 이전, 교통 인프라 확충 등의 영향을 받으며,
-            인구 급감 지역은 고령화, 일자리 감소 등 구조적 변화를 반영합니다.
-            지역별 인구 데이터를 통해 부동산 투자의 기초 자료로 활용해 보세요.
+            <strong>부동산 투자 관점에서의 활용:</strong> 인구가 지속적으로 급증하는 지역은 신규 택지 지구 개발,
+            대형 기업의 입주, 또는 GTX와 같은 중대한 교통 인프라 확충의 직접적인 수혜를 받고 있을
+            확률이 높습니다. 반면 인구가 급감하는 지역은 산업 기반의 약화나 주변 신도시로의 인구 유출 등
+            구조적 문제를 겪고 있을 수 있습니다. 단기적인 1~3개월 증감보다는 1년 이상의 장기 추세를 통해
+            해당 지역이 성장기인지, 정체기인지, 혹은 쇠퇴기인지를 판단하는 기초 자료로 활용하시기 바랍니다.
           </p>
           <p
-            className="text-[12px] leading-relaxed"
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
+          >
+            <strong>상권 분석과 세대 분화의 이해:</strong> 총인구가 감소하더라도 세대수가 오히려 증가하는 현상이
+            전국적으로 나타나고 있습니다. 이는 1~2인 가구로의 세대 분화가 빠르게 진행되고 있음을 의미합니다.
+            세대수가 늘어난다는 것은 곧 소형 주거 공간(원룸, 오피스텔 등)에 대한 수요가 유지되거나
+            증가한다는 신호이며, 이들을 타깃으로 하는 편의점, 배달 중심 외식업, 1인 맞춤형 서비스 업종의
+            배후 수요가 견조함을 시사합니다. 또한 연령별 인구 비중을 통해 주력 소비층이 2030인지,
+            4050 가족 단위인지 파악하여 업종을 선정하는 데 도움을 얻을 수 있습니다.
+          </p>
+          <p
+            className="text-[13px] leading-relaxed"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            다만 주민등록 인구는 <strong>등록 주소지 기준</strong>이라 실제 거주 인구나
-            유동 인구와는 다릅니다. 상권을 검토할 때는 배후 거주 인구의 규모·연령대·
-            세대 구성을 읽는 용도로 활용하고, 매출력 판단에는 다른 지표를 함께 보아야 합니다.
-            집계 방식과 지표 정의는 데이터 방법론 문서에 정리해 두었습니다.
+            <strong>데이터 해석 시 주의사항:</strong> 본 서비스에서 제공하는 수치는 행정상
+            <strong>등록 주소지 기준의 주민등록 인구</strong>입니다. 따라서 통신사 기지국 기반의
+            실제 거주 인구나 특정 시간대의 유동 인구와는 차이가 발생할 수 있습니다. 상권 입지를
+            최종적으로 검토하실 때는 본 대시보드의 데이터를 배후 거주 인구의 절대적인 규모와 성격을
+            파악하는 1차 필터링 도구로 활용하시고, 카드사 매출 데이터나 유동 인구 지표를 상호 보완적으로
+            함께 교차 검증하시기를 권장합니다. 상세한 집계 방식과 지표의 학술적 정의는 하단의
+            데이터 방법론 문서에서 확인하실 수 있습니다.
           </p>
         </div>
       </Section>

@@ -71,20 +71,49 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
           }}
         >
           <h2
-            className="text-[14px] font-bold"
-            style={{ color: 'var(--color-text-primary)', marginBottom: 8 }}
+            className="text-[15px] font-bold"
+            style={{ color: 'var(--color-text-primary)', marginBottom: 12 }}
           >
-            인구 순위 활용 가이드
+            지역별 인구 순위 활용 및 해석 가이드
           </h2>
           <p
-            className="text-[12px] leading-relaxed"
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
+          >
+            전국 시군구 단위의 인구 순위표는 단순한 등수를 넘어, 지역 간의 상대적 위상과 
+            자본/수요의 이동 흐름을 가장 명확하게 보여주는 지표입니다. 본 순위표는 크게 세 가지 
+            기준으로 정렬하여 분석할 수 있으며, 각 기준은 부동산 및 상권 분석 시 서로 다른 통찰을 제공합니다.
+          </p>
+          <p
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
+          >
+            <strong>총인구 규모의 의미:</strong> 총인구 정렬은 해당 지역의 절대적인 상권 규모, 
+            배후 소비력, 그리고 생활 인프라의 크기를 가늠하는 척도입니다. 통상적으로 인구 50만 명 
+            이상은 대도시 특례 수준의 인프라(대형 병원, 백화점, 독자적 학군 등)를 갖추며, 
+            상권이 자족적인 생태계를 형성합니다. 따라서 프랜차이즈 진입이나 대형 상업 시설 투자를 
+            검토할 때는 총인구가 높은 지역부터 우선순위를 두는 것이 일반적입니다.
+          </p>
+          <p
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)', marginBottom: 12 }}
+          >
+            <strong>단기 및 장기 증감 흐름:</strong> <strong>전월 증감</strong>은 신규 아파트 단지의 입주, 
+            대학가의 학기 시작 등 단기적인 유입·유출 이벤트나 계절적 요인을 포착하기 좋습니다. 
+            반면 <strong>전년 대비 증감률(YoY)</strong>은 계절적 요인을 배제한 구조적이고 
+            장기적인 성장세를 보여줍니다. 만약 특정 지역이 전년 대비 증감률 최상위권을 수개월째 
+            유지하고 있다면, 이는 일시적인 현상이 아니라 교통망 신설이나 대규모 산업 단지 조성 등 
+            강력한 펀더멘털의 변화가 진행 중임을 암시합니다.
+          </p>
+          <p
+            className="text-[13px] leading-relaxed"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            순위는 세 가지 기준으로 다르게 읽어야 합니다. <strong>총인구</strong> 정렬은
-            상권 규모와 생활 인프라의 절대적인 크기를, <strong>전월 증감</strong>은 단기적인
-            유입·유출 흐름을, <strong>전년 증감률</strong>은 계절 요인을 제거한 구조적 성장세를
-            보여줍니다. 규모가 작은 지역은 증감률이 크게 흔들리므로 절대 증감량과 함께 보고,
-            시도 필터로 같은 권역 안에서 비교하면 지역 특성이 더 선명하게 드러납니다.
+            <strong>분석 시 주의할 점:</strong> 총인구 규모가 작은 군 단위 지역은 단 1,000명만 증가해도 
+            증감률(%)이 비정상적으로 크게 튀어 오를 수 있습니다. 따라서 순위를 읽을 때는 증감률과 
+            동시에 절대 증감량(명)을 반드시 함께 교차 확인해야 합니다. 또한 전국 단위의 줄세우기보다는, 
+            상단의 <strong>시도 필터</strong>를 사용하여 동일한 생활권이나 경제 권역 내에서 비교할 때 
+            해당 지역의 진정한 부동산 및 상업적 경쟁력이 훨씬 선명하게 드러납니다.
           </p>
         </div>
 
